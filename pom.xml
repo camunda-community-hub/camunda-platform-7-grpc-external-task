@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
@@ -46,11 +47,8 @@
     <dependency>
       <groupId>org.camunda.bpm.springboot</groupId>
       <artifactId>camunda-bpm-spring-boot-starter-webapp</artifactId>
-      <!--
-      Adjust if you want to use EE:
-      <artifactId>camunda-bpm-spring-boot-starter-webapp-ee</artifactId>
-      Make sure you also use an EE version of Camunda - see above
-      -->
+      <!-- Adjust if you want to use EE: <artifactId>camunda-bpm-spring-boot-starter-webapp-ee</artifactId> 
+        Make sure you also use an EE version of Camunda - see above -->
       <version>${camundaSpringBoot.version}</version>
     </dependency>
 
@@ -71,7 +69,7 @@
       <artifactId>h2</artifactId>
     </dependency>
 
-    <!-- required to use H2 as a file based database  (Otherwise it's In-Memory) -->
+    <!-- required to use H2 as a file based database (Otherwise it's In-Memory) -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-jdbc</artifactId>
@@ -100,12 +98,13 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Add your own dependencies here, if in compile scope, they are added to the jar -->
-	<dependency>
-	  <groupId>io.github.lognet</groupId>
-	  <artifactId>grpc-spring-boot-starter</artifactId>
-	  <version>3.4.0</version>
-	</dependency>
+    <!-- Add your own dependencies here, if in compile scope, they are added 
+      to the jar -->
+    <dependency>
+      <groupId>io.github.lognet</groupId>
+      <artifactId>grpc-spring-boot-starter</artifactId>
+      <version>3.4.0</version>
+    </dependency>
 
   </dependencies>
 
@@ -115,25 +114,35 @@
       <name>Camunda Maven Repository</name>
       <url>https://app.camunda.com/nexus/content/groups/public</url>
     </repository>
-    <!-- enable this for EE dependencies (requires credentials in ~/.m2/settings.xml)
-    <repository>
-      <id>camunda-bpm-nexus-ee</id>
-      <name>Camunda Enterprise Maven Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-bpm-ee</url>
-    </repository>
-    -->
+    <!-- enable this for EE dependencies (requires credentials in ~/.m2/settings.xml) 
+      <repository> <id>camunda-bpm-nexus-ee</id> <name>Camunda Enterprise Maven 
+      Repository</name> <url>https://app.camunda.com/nexus/content/repositories/camunda-bpm-ee</url> 
+      </repository> -->
   </repositories>
 
   <build>
     <finalName>${project.artifactId}</finalName>
-	<extensions>
-		<extension>
-		  <groupId>kr.motd.maven</groupId>
-		  <artifactId>os-maven-plugin</artifactId>
-		  <version>1.6.1</version>
-		</extension>
-	</extensions>
+<!--     <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.6.1</version>
+      </extension>
+    </extensions> -->
     <plugins>
+      <plugin>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.6.1</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>detect</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
@@ -157,28 +166,28 @@
           <mainClass>org.camunda.bpm.grpc.CamundaApplication</mainClass>
         </configuration>
       </plugin>
-	  <plugin>
-		  <groupId>org.xolstice.maven.plugins</groupId>
-		  <artifactId>protobuf-maven-plugin</artifactId>
-		  <version>0.6.1</version>
-		  <configuration>
-			<protocArtifact>
-			  com.google.protobuf:protoc:3.3.0:exe:${os.detected.classifier}
-			</protocArtifact>
-			<pluginId>grpc-java</pluginId>
-			<pluginArtifact>
-			  io.grpc:protoc-gen-grpc-java:1.4.0:exe:${os.detected.classifier}
-			</pluginArtifact>
-		  </configuration>
-		  <executions>
-			<execution>
-			  <goals>
-				<goal>compile</goal>
-				<goal>compile-custom</goal>
-			  </goals>
-			</execution>
-		  </executions>
-	  </plugin>
+      <plugin>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>0.6.1</version>
+        <configuration>
+          <pluginId>grpc-java</pluginId>
+          <protocArtifact>
+            com.google.protobuf:protoc:3.3.0:exe:${os.detected.classifier}
+          </protocArtifact>
+          <pluginArtifact>
+            io.grpc:protoc-gen-grpc-java:1.4.0:exe:${os.detected.classifier}
+          </pluginArtifact>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
