@@ -9,9 +9,27 @@ import io.grpc.stub.StreamObserver;
 public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
 
   @Override
-  public void fetchAndLock(FetchAndLockRequest request, StreamObserver<FetchAndLockReply> responseObserver) {
-    FetchAndLockReply.Builder replyBuilder = FetchAndLockReply.newBuilder().setId("LockedTask1");
-    responseObserver.onNext(replyBuilder.build());
-    responseObserver.onCompleted();
+  public StreamObserver<FetchAndLockRequest> fetchAndLock(StreamObserver<FetchAndLockReply> responseObserver) {
+    StreamObserver<FetchAndLockRequest> requestObserver = new StreamObserver<FetchAndLockRequest>() {
+
+      @Override
+      public void onNext(FetchAndLockRequest value) {
+        FetchAndLockReply.Builder replyBuilder = FetchAndLockReply.newBuilder().setId("LockedTask" + Math.random());
+        responseObserver.onNext(replyBuilder.build());
+        responseObserver.onCompleted();
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        // nothing
+      }
+
+      @Override
+      public void onCompleted() {
+        // nothing
+      }
+    };
+    return requestObserver;
   }
+
 }

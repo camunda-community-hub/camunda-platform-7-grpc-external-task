@@ -5,7 +5,8 @@ package org.camunda.bpm.grpc;
 // The external task service definition.
 service ExternalTask {
   // fetches and locks external tasks
-  rpc fetchAndLock (FetchAndLockRequest) returns (FetchAndLockReply) {}
+  rpc fetchAndLock (stream FetchAndLockRequest) returns (stream FetchAndLockReply) {}
+  
 }
 
 // The request message containing the task topic.
