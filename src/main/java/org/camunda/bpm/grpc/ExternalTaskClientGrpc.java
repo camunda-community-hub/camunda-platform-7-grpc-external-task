@@ -13,7 +13,7 @@ public class ExternalTaskClientGrpc {
 
     ExternalTaskGrpc.ExternalTaskBlockingStub stub = ExternalTaskGrpc.newBlockingStub(channel);
 
-    FetchAndLockReply fetchAndLockReply = stub.fetchAndLock(FetchAndLockRequest.newBuilder().setTopicName("foo").build());
+    FetchAndLockReply fetchAndLockReply = stub.fetchAndLock(FetchAndLockRequest.newBuilder().setTopicName("fancyTask").build());
 
     log.info(fetchAndLockReply.toString());
 
