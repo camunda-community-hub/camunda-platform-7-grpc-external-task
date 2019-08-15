@@ -12,11 +12,13 @@ import java.io.IOException;
 public class ClientExampleApplication {
 
   public static final Logger log = LoggerFactory.getLogger(ClientExampleApplication.class);
+  public static final String WORKER_ID = "grpc-worker";
+
 
   public static void main(String[] args) throws IOException {
     SpringApplication.run(ClientExampleApplication.class, args);
 
-    ExternalTaskClientGrpc myClient = new ExternalTaskClientGrpc("fancyTask");
+    ExternalTaskClientGrpc myClient = new ExternalTaskClientGrpc("fancyTask", WORKER_ID);
     myClient.start();
 
     log.info("PRESS ANY KEY TO CLOSE");

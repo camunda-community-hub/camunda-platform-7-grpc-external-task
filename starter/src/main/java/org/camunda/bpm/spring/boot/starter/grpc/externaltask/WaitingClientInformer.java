@@ -40,7 +40,7 @@ public class WaitingClientInformer {
       Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>> pair = iterator.next();
       // TODO build Java API request from request DTO
       List<LockedExternalTask> lockedTasks = externalTaskService
-          .fetchAndLock(1, ExternalTaskServiceGrpc.WORKER_ID)
+          .fetchAndLock(1, pair.getLeft().getWorkerId())
           .topic(pair.getLeft().getTopicName(), ExternalTaskServiceGrpc.LOCK_TIMEOUT)
           .execute();
       if (!lockedTasks.isEmpty()) {

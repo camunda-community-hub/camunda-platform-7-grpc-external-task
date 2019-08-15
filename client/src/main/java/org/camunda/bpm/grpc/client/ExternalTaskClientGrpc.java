@@ -3,9 +3,7 @@ package org.camunda.bpm.grpc.client;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import org.camunda.bpm.grpc.ExternalTaskGrpc;
-import org.camunda.bpm.grpc.FetchAndLockReply;
-import org.camunda.bpm.grpc.FetchAndLockRequest;
+import org.camunda.bpm.grpc.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +13,8 @@ import java.util.concurrent.Semaphore;
 public class ExternalTaskClientGrpc implements Runnable {
 
   private String topic;
+  private String workerId;
+
   private ManagedChannel channel;
   private ExternalTaskGrpc.ExternalTaskStub stub;
   private FetchAndLockRequest request;
@@ -26,13 +26,14 @@ public class ExternalTaskClientGrpc implements Runnable {
 
   public static final Logger log = LoggerFactory.getLogger(ExternalTaskClientGrpc.class);
 
-  public ExternalTaskClientGrpc(String topic){
+  public ExternalTaskClientGrpc(String topic, String workerId){
 
     this.topic = topic;
     this.channel = ManagedChannelBuilder.forAddress("localhost", 6565).usePlaintext().build();
     this.stub = ExternalTaskGrpc.newStub(channel);
-    this.request = FetchAndLockRequest.newBuilder().setTopicName(topic).build();
+    this.request = FetchAndLockRequest.newBuilder().setTopicName(topic).setWorkerId(workerId).build();
     this.semaphore = new Semaphore(0);
+    this.workerId = workerId;
 
   }
 
@@ -46,8 +47,9 @@ public class ExternalTaskClientGrpc implements Runnable {
     requestObserver = stub.fetchAndLock(new StreamObserver<FetchAndLockReply>() {
 
       @Override
-      public void onNext(FetchAndLockReply var1) {
-        log.info("Got a task, done it: " + var1.getId());
+      public void onNext(FetchAndLockReply reply) {
+        log.info("Got a task, done it: " + reply.getId());
+        handleTask(reply);
         semaphore.release();
       }
 
@@ -91,6 +93,23 @@ public class ExternalTaskClientGrpc implements Runnable {
     } catch (Exception e) {
       log.warn("Stop on client produced an exception", e);
     }
+  }
+
+  private void handleTask(FetchAndLockReply reply) {
+    stub.complete(CompleteRequest.newBuilder().setWorkerId(workerId).setId(reply.getId()).build(), new StreamObserver<CompleteResponse>() {
+      @Override
+      public void onNext(CompleteResponse completeResponse) {
+        log.info("Task completed with " + completeResponse.getStatus());
+      }
+
+      @Override
+      public void onError(Throwable throwable) {
+        log.error("Oh no, could not complete the task (server error)");
+      }
+
+      @Override
+      public void onCompleted() {}
+    });
   }
 
   @PreDestroy

@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.camunda.bpm.engine.ExternalTaskService;
 import org.camunda.bpm.engine.externaltask.LockedExternalTask;
+import org.camunda.bpm.grpc.CompleteRequest;
+import org.camunda.bpm.grpc.CompleteResponse;
 import org.camunda.bpm.grpc.ExternalTaskGrpc.ExternalTaskImplBase;
 import org.camunda.bpm.grpc.FetchAndLockReply;
 import org.camunda.bpm.grpc.FetchAndLockRequest;
@@ -23,7 +25,6 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
   @Autowired
   private WaitingClientInformer informer;
 
-  public static final String WORKER_ID = "grpc-worker";
   public static final long LOCK_TIMEOUT = 30000L;
 
   @Override
@@ -48,10 +49,23 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
     return requestObserver;
   }
 
+  @Override
+  public void complete(CompleteRequest request, StreamObserver<CompleteResponse> responseObserver) {
+
+    try {
+      externalTaskService.complete(request.getId(), request.getWorkerId());
+    }catch (Exception e){
+      responseObserver.onError(e);
+    }
+    responseObserver.onNext(CompleteResponse.newBuilder().setStatus("OK").build());
+    responseObserver.onCompleted();
+
+  }
+
   private void informClient(FetchAndLockRequest request, StreamObserver<FetchAndLockReply> client) {
     // TODO build Java API request from request DTO
     List<LockedExternalTask> lockedTasks = externalTaskService
-        .fetchAndLock(1, WORKER_ID)
+        .fetchAndLock(1, request.getWorkerId())
         .topic(request.getTopicName(), LOCK_TIMEOUT)
         .execute();
     if (lockedTasks.isEmpty()) {
