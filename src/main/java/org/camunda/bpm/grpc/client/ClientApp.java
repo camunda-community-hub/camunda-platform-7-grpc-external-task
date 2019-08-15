@@ -7,8 +7,8 @@ public class ClientApp {
 
     myClient.start();
 
-//    Thread.sleep(10000);
-//
-//    myClient.stop();
+    Thread.sleep(15000L);
+
+    myClient.stop();
   }
 }

@@ -12,7 +12,7 @@ import javax.annotation.PreDestroy;
 import java.util.concurrent.Semaphore;
 
 @Slf4j
-public class ExternalTaskClientGrpc {
+public class ExternalTaskClientGrpc implements Runnable {
 
   private String topic;
   private ManagedChannel channel;
@@ -21,6 +21,8 @@ public class ExternalTaskClientGrpc {
   private Semaphore semaphore;
 
   private boolean isRunning;
+  private Thread handlerThread;
+  private StreamObserver<FetchAndLockRequest> requestObserver;
 
   public ExternalTaskClientGrpc(String topic){
 
@@ -34,10 +36,12 @@ public class ExternalTaskClientGrpc {
 
   public void start() {
 
-    log.info(">>>>>>>>>> Starting grpc client for topic " + topic);
-    isRunning = true;
+    if (isRunning) {
+      return;
+    }
 
-    final StreamObserver<FetchAndLockRequest> requestObserver = stub.fetchAndLock(new StreamObserver<FetchAndLockReply>() {
+    log.info(">>>>>>>>>> Starting grpc client for topic " + topic);
+    requestObserver = stub.fetchAndLock(new StreamObserver<FetchAndLockReply>() {
 
       @Override
       public void onNext(FetchAndLockReply var1) {
@@ -56,23 +60,35 @@ public class ExternalTaskClientGrpc {
       }
     });
 
+    isRunning = true;
+    handlerThread = new Thread(this);
+    handlerThread.start();
+  }
+
+  @Override
+  public void run() {
     while(isRunning) {
 
       requestObserver.onNext(request);
       try {
         semaphore.acquire();
       } catch (InterruptedException e) {
-        log.error(e.getMessage());
+        log.warn("Client was stopped while waiting on answer from server");
       }
     }
 
     requestObserver.onCompleted();
-
   }
 
   public void stop(){
     log.info(">>>>>>>>>> Stopping grpc client for topic " + topic);
     isRunning = false;
+    try {
+      handlerThread.interrupt();
+      handlerThread = null;
+    } catch (Exception e) {
+      log.warn("Stop on client produced an exception", e);
+    }
   }
 
   @PreDestroy
