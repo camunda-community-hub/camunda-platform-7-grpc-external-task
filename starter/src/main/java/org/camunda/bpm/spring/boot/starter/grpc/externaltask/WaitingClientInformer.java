@@ -1,4 +1,4 @@
-package org.camunda.bpm.grpc;
+  package org.camunda.bpm.spring.boot.starter.grpc.externaltask;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,7 +8,12 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.engine.ExternalTaskService;
 import org.camunda.bpm.engine.externaltask.LockedExternalTask;
+import org.camunda.bpm.grpc.FetchAndLockReply;
+import org.camunda.bpm.grpc.FetchAndLockRequest;
+import org.camunda.bpm.spring.boot.starter.event.PostDeployEvent;
+import org.camunda.bpm.spring.boot.starter.event.PreUndeployEvent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import io.grpc.stub.StreamObserver;
@@ -20,6 +25,8 @@ public class WaitingClientInformer {
 
   @Autowired
   ExternalTaskService externalTaskService;
+
+  private ExternalTaskCreationListener externalTaskCreationListener;
 
   private List<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>>> waitingClients = Collections.synchronizedList(new ArrayList<>());
 
@@ -41,6 +48,20 @@ public class WaitingClientInformer {
         iterator.remove();
         pair.getRight().onNext(FetchAndLockReply.newBuilder().setId(lockedTasks.get(0).getId()).build());
       }
+    }
+  }
+
+  @EventListener
+  public void onPostDeploy(PostDeployEvent event) {
+    externalTaskCreationListener = new ExternalTaskCreationListener(this);
+    externalTaskCreationListener.start();
+  }
+
+  @EventListener
+  public void onPreUndeploy(PreUndeployEvent event) {
+    if (externalTaskCreationListener != null) {
+      externalTaskCreationListener.shutdown();
+      externalTaskCreationListener = null;
     }
   }
 }

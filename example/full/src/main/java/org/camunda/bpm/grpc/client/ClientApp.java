@@ -7,13 +7,13 @@ public class ClientApp {
 
     myClient.start();
 
-    Thread.sleep(10000L);
-
-    myClient.stop();
-
-    Thread.sleep(5000L);
-
-    myClient.start();
+//    Thread.sleep(10000L);
+//
+//    myClient.stop();
+//
+//    Thread.sleep(5000L);
+//
+//    myClient.start();
   }
 
 }

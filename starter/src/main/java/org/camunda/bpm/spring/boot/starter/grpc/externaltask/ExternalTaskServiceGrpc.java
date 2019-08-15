@@ -1,10 +1,12 @@
-package org.camunda.bpm.grpc;
+package org.camunda.bpm.spring.boot.starter.grpc.externaltask;
 
 import java.util.List;
 
 import org.camunda.bpm.engine.ExternalTaskService;
 import org.camunda.bpm.engine.externaltask.LockedExternalTask;
 import org.camunda.bpm.grpc.ExternalTaskGrpc.ExternalTaskImplBase;
+import org.camunda.bpm.grpc.FetchAndLockReply;
+import org.camunda.bpm.grpc.FetchAndLockRequest;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
