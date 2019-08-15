@@ -1,0 +1,20 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package org.camunda.bpm.grpc;
+
+// The external task service definition.
+service ExternalTask {
+  // fetches and locks external tasks
+  rpc fetchAndLock (stream FetchAndLockRequest) returns (stream FetchAndLockReply) {}
+  
+}
+
+// The request message containing the task topic.
+message FetchAndLockRequest {
+  string topicName = 1;
+}
+
+// The response message containing the greetings
+message FetchAndLockReply {
+  string id = 1;
+}

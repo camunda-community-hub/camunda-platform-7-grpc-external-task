@@ -1,5 +1,5 @@
-/*.classpath
-/*.project
-/.settings
-/*.db
-/target
+*.project
+*.settings
+target
+*.db
+*.classpath
