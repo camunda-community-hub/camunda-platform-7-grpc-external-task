@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.camunda</groupId>
-    <artifactId>camunda.bpm.grpc.external.task.server</artifactId>
+    <artifactId>grpc-example</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <name>Camunda BPM External Task gRPC</name>
@@ -49,12 +49,6 @@
             <artifactId>camunda-bpm-spring-boot-starter-webapp</artifactId>
             <!-- Adjust if you want to use EE: <artifactId>camunda-bpm-spring-boot-starter-webapp-ee</artifactId>
               Make sure you also use an EE version of Camunda - see above -->
-            <version>${camundaSpringBoot.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.camunda.bpm.springboot</groupId>
-            <artifactId>camunda-bpm-spring-boot-starter-rest</artifactId>
             <version>${camundaSpringBoot.version}</version>
         </dependency>
 

@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.event.EventListener;
 
 @SpringBootApplication
-@EnableProcessApplication("camunda.bpm.grpc.external.task.server")
+@EnableProcessApplication("grpc-example")
 public class CamundaApplication  {
 
   @Autowired

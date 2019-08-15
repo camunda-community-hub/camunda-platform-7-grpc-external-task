@@ -40,7 +40,7 @@ public class ExternalTaskClientGrpc implements Runnable {
       return;
     }
 
-    log.info(">>>>>>>>>> Starting grpc client for topic " + topic);
+    log.info("Starting grpc client for topic " + topic);
     requestObserver = stub.fetchAndLock(new StreamObserver<FetchAndLockReply>() {
 
       @Override
@@ -81,7 +81,7 @@ public class ExternalTaskClientGrpc implements Runnable {
   }
 
   public void stop(){
-    log.info(">>>>>>>>>> Stopping grpc client for topic " + topic);
+    log.info("Stopping grpc client for topic " + topic);
     isRunning = false;
     try {
       handlerThread.interrupt();
@@ -93,6 +93,7 @@ public class ExternalTaskClientGrpc implements Runnable {
 
   @PreDestroy
   public void destroy(){
+    log.info("Shutting down channel ...");
     channel.shutdown();
   }
 
