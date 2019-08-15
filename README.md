@@ -5,4 +5,4 @@ You can use the [Spring Boot Starter](./starter) in your server Spring Boot appl
 
 You can use the [Client Base](./client) in your application (e. g. a Spring Boot application) to consume the gRPC API.
 
-Have a look at the [examples](./examples) for server and client examples.
+Have a look at the [examples](./example) for server and client examples.
