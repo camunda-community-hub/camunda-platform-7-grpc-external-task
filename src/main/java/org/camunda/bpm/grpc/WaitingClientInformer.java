@@ -12,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import io.grpc.stub.StreamObserver;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 public class WaitingClientInformer {
 
@@ -26,6 +28,7 @@ public class WaitingClientInformer {
   }
 
   public void informClients() {
+    log.info("Found {} pending requests", waitingClients.size());
     for (Iterator<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>>> iterator = waitingClients.iterator(); iterator.hasNext();) {
       Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>> pair = iterator.next();
       // TODO build Java API request from request DTO
@@ -34,6 +37,7 @@ public class WaitingClientInformer {
           .topic(pair.getLeft().getTopicName(), ExternalTaskServiceGrpc.LOCK_TIMEOUT)
           .execute();
       if (!lockedTasks.isEmpty()) {
+        log.info("informed client about locked external task {}", lockedTasks.get(0).getId());
         iterator.remove();
         pair.getRight().onNext(FetchAndLockReply.newBuilder().setId(lockedTasks.get(0).getId()).build());
       }

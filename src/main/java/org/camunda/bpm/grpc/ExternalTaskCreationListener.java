@@ -36,9 +36,17 @@ public class ExternalTaskCreationListener implements Runnable {
   public void run() {
     while (isRunning) {
       try {
+        log.info("Run external task listener...");
         informer.informClients();
+        log.info("Let external task listener wait...");
+        condition.await(500000L);
+        log.info("External task listener woke up!");
       } catch (Exception e) {
         // what ever happens, don't leave the loop
+      } finally {
+        if (handlerThread.isInterrupted()) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
 
