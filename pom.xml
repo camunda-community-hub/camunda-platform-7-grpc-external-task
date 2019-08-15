@@ -12,7 +12,7 @@
     <description>Camunda BPM providing gRPC External Task Server with Spring Boot</description>
 
     <properties>
-        <camunda.version>7.12.0-SNAPSHOT</camunda.version>
+        <camunda.version>7.11.0</camunda.version>
         <camundaSpringBoot.version>3.3.1</camundaSpringBoot.version>
         <springBoot.version>2.1.5.RELEASE</springBoot.version>
 
