@@ -13,7 +13,7 @@ public class ExternalTaskClientGrpc {
   public static void main(String[] args) throws InterruptedException {
 
     CountDownLatch latch = new CountDownLatch(15);
-    FetchAndLockRequest request = FetchAndLockRequest.newBuilder().setTopicName("fancy").build();
+    FetchAndLockRequest request = FetchAndLockRequest.newBuilder().setTopicName("fancyTask").build();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 6565).usePlaintext()
         .build();
