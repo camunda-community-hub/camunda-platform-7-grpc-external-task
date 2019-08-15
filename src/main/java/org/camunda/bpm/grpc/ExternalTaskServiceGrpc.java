@@ -1,9 +1,6 @@
 package org.camunda.bpm.grpc;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.camunda.bpm.engine.ExternalTaskService;
 import org.camunda.bpm.engine.externaltask.LockedExternalTask;
@@ -21,10 +18,11 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
   @Autowired
   private ExternalTaskService externalTaskService;
 
-  private String workerId = "grpc-worker";
-  private long lockTimeout = 30000L;
+  @Autowired
+  private WaitingClientInformer informer;
 
-  private Map<String, List<StreamObserver<FetchAndLockReply>>> waitingClients = new HashMap<>();
+  public static final String WORKER_ID = "grpc-worker";
+  public static final long LOCK_TIMEOUT = 30000L;
 
   @Override
   public StreamObserver<FetchAndLockRequest> fetchAndLock(StreamObserver<FetchAndLockReply> responseObserver) {
@@ -32,22 +30,7 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
 
       @Override
       public void onNext(FetchAndLockRequest request) {
-        String topicName = request.getTopicName();
-        List<LockedExternalTask> lockedTasks = externalTaskService
-            .fetchAndLock(1, workerId)
-            .topic(topicName, lockTimeout)
-            .execute();
-        if (lockedTasks.isEmpty()) {
-          // if no external tasks locked => save the response observer and
-          // notify later when external task created for the topic in the engine
-          if (!waitingClients.containsKey(topicName)) {
-            waitingClients.put(topicName, new ArrayList<>());
-          }
-          waitingClients.get(topicName).add(responseObserver);
-        } else {
-          FetchAndLockReply.Builder replyBuilder = FetchAndLockReply.newBuilder().setId(lockedTasks.get(0).getId());
-          responseObserver.onNext(replyBuilder.build());
-        }
+        informClient(request, responseObserver);
       }
 
       @Override
@@ -63,4 +46,19 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
     return requestObserver;
   }
 
+  private void informClient(FetchAndLockRequest request, StreamObserver<FetchAndLockReply> client) {
+    // TODO build Java API request from request DTO
+    List<LockedExternalTask> lockedTasks = externalTaskService
+        .fetchAndLock(1, WORKER_ID)
+        .topic(request.getTopicName(), LOCK_TIMEOUT)
+        .execute();
+    if (lockedTasks.isEmpty()) {
+      // if no external tasks locked => save the response observer and
+      // notify later when external task created for the topic in the engine
+      informer.addWaitingClient(request, client);
+    } else {
+      FetchAndLockReply.Builder replyBuilder = FetchAndLockReply.newBuilder().setId(lockedTasks.get(0).getId());
+      client.onNext(replyBuilder.build());
+    }
+  }
 }
