@@ -45,12 +45,12 @@ public class ExternalTaskClientGrpc implements Runnable {
       return;
     }
 
-    log.info("Starting grpc client for topic " + topic);
+    log.info("Starting grpc client for topic {} and worker {}", topic, workerId);
     requestObserver = stub.fetchAndLock(new StreamObserver<FetchAndLockReply>() {
 
       @Override
       public void onNext(FetchAndLockReply reply) {
-        log.info("Got a task, done it: " + reply.getId());
+        log.info("Got a task, will handle it: " + reply.getId());
         handler.handleTask(reply,stub);
         semaphore.release();
       }
@@ -87,7 +87,7 @@ public class ExternalTaskClientGrpc implements Runnable {
   }
 
   public void stop(){
-    log.info("Stopping grpc client for topic " + topic);
+    log.info("Stopping grpc client for topic {}", topic);
     isRunning = false;
     try {
       handlerThread.interrupt();

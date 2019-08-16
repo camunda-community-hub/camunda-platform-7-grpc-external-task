@@ -8,7 +8,6 @@ import org.camunda.bpm.grpc.FetchAndLockReply;
 import org.camunda.bpm.grpc.client.ExternalTaskHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 public class MyExternalTaskHandler implements ExternalTaskHandler {
 
@@ -26,7 +25,7 @@ public class MyExternalTaskHandler implements ExternalTaskHandler {
 
       @Override
       public void onError(Throwable throwable) {
-        log.error("Oh no, could not complete the task (server error)");
+        log.error("Oh no, could not complete the task (server error)", throwable);
       }
 
       @Override
