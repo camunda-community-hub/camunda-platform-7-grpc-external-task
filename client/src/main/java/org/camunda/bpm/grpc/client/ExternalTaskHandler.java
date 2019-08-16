@@ -7,4 +7,6 @@ public interface ExternalTaskHandler {
 
   void handleTask(FetchAndLockReply reply, ExternalTaskGrpc.ExternalTaskStub service);
 
+  void setWorkerId(String workerId);
+
 }

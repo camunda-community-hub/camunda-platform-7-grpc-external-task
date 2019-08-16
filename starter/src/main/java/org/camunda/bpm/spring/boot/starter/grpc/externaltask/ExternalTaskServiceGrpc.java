@@ -43,6 +43,7 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
 
       @Override
       public void onCompleted() {
+        informer.removeClientRequests(responseObserver);
         responseObserver.onCompleted();
       }
     };
@@ -54,11 +55,12 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
 
     try {
       externalTaskService.complete(request.getId(), request.getWorkerId());
+      responseObserver.onNext(CompleteResponse.newBuilder().setStatus("OK").build());
+      responseObserver.onCompleted();
     } catch (Exception e) {
+      log.error("Error on complete task", e);
       responseObserver.onError(e);
     }
-    responseObserver.onNext(CompleteResponse.newBuilder().setStatus("OK").build());
-    responseObserver.onCompleted();
 
   }
 

@@ -36,7 +36,7 @@ public class ExternalTaskClientGrpc implements Runnable {
     this.semaphore = new Semaphore(0);
     this.workerId = workerId;
     this.handler = handler;
-
+    this.handler.setWorkerId(workerId);
   }
 
   public void start() {

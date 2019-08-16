@@ -13,9 +13,9 @@ public class MyExternalTaskHandler implements ExternalTaskHandler {
 
   private static final Logger log = LoggerFactory.getLogger(MyExternalTaskHandler.class);
 
-  public void handleTask(FetchAndLockReply reply, ExternalTaskGrpc.ExternalTaskStub service) {
+  private String workerId;
 
-    String workerId = ClientExampleApplication.WORKER_ID;
+  public void handleTask(FetchAndLockReply reply, ExternalTaskGrpc.ExternalTaskStub service) {
 
     service.complete(CompleteRequest.newBuilder().setWorkerId(workerId).setId(reply.getId()).build(), new StreamObserver<CompleteResponse>() {
       @Override
@@ -31,5 +31,10 @@ public class MyExternalTaskHandler implements ExternalTaskHandler {
       @Override
       public void onCompleted() {}
     });
+  }
+
+  @Override
+  public void setWorkerId(String workerId) {
+    this.workerId = workerId;
   }
 }

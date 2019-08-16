@@ -51,6 +51,16 @@ public class WaitingClientInformer {
     }
   }
 
+  public void removeClientRequests(StreamObserver<FetchAndLockReply> client) {
+    log.info("Removing all pending requests for client");
+    for (Iterator<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>>> iterator = waitingClients.iterator(); iterator.hasNext();) {
+      Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>> pair = iterator.next();
+      if (pair.getRight().equals(client)) {
+        iterator.remove();
+      }
+    }
+  }
+
   @EventListener
   public void onPostDeploy(PostDeployEvent event) {
     externalTaskCreationListener = new ExternalTaskCreationListener(this);
