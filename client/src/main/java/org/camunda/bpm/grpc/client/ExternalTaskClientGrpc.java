@@ -14,6 +14,7 @@ public class ExternalTaskClientGrpc implements Runnable {
 
   private String topic;
   private String workerId;
+  private ExternalTaskHandler handler;
 
   private ManagedChannel channel;
   private ExternalTaskGrpc.ExternalTaskStub stub;
@@ -26,7 +27,7 @@ public class ExternalTaskClientGrpc implements Runnable {
 
   public static final Logger log = LoggerFactory.getLogger(ExternalTaskClientGrpc.class);
 
-  public ExternalTaskClientGrpc(String topic, String workerId){
+  public ExternalTaskClientGrpc(String topic, String workerId, ExternalTaskHandler handler){
 
     this.topic = topic;
     this.channel = ManagedChannelBuilder.forAddress("localhost", 6565).usePlaintext().build();
@@ -34,6 +35,7 @@ public class ExternalTaskClientGrpc implements Runnable {
     this.request = FetchAndLockRequest.newBuilder().setTopicName(topic).setWorkerId(workerId).build();
     this.semaphore = new Semaphore(0);
     this.workerId = workerId;
+    this.handler = handler;
 
   }
 
@@ -49,7 +51,7 @@ public class ExternalTaskClientGrpc implements Runnable {
       @Override
       public void onNext(FetchAndLockReply reply) {
         log.info("Got a task, done it: " + reply.getId());
-        handleTask(reply);
+        handler.handleTask(reply,stub);
         semaphore.release();
       }
 
@@ -95,22 +97,7 @@ public class ExternalTaskClientGrpc implements Runnable {
     }
   }
 
-  private void handleTask(FetchAndLockReply reply) {
-    stub.complete(CompleteRequest.newBuilder().setWorkerId(workerId).setId(reply.getId()).build(), new StreamObserver<CompleteResponse>() {
-      @Override
-      public void onNext(CompleteResponse completeResponse) {
-        log.info("Task completed with " + completeResponse.getStatus());
-      }
 
-      @Override
-      public void onError(Throwable throwable) {
-        log.error("Oh no, could not complete the task (server error)");
-      }
-
-      @Override
-      public void onCompleted() {}
-    });
-  }
 
   @PreDestroy
   public void destroy(){
