@@ -54,7 +54,7 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
 
     try {
       externalTaskService.complete(request.getId(), request.getWorkerId());
-    }catch (Exception e){
+    } catch (Exception e) {
       responseObserver.onError(e);
     }
     responseObserver.onNext(CompleteResponse.newBuilder().setStatus("OK").build());

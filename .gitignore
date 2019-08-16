@@ -3,4 +3,3 @@
 target
 *.db
 *.classpath
-src/test/
