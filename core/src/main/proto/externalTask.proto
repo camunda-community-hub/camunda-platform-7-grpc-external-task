@@ -1,0 +1,104 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package org.camunda.bpm.grpc;
+
+// The external task service definition.
+service ExternalTask {
+  // fetches and locks external tasks
+  rpc fetchAndLock (stream FetchAndLockRequest) returns (stream FetchAndLockResponse) {};
+  rpc complete (CompleteRequest) returns (CompleteResponse);
+  rpc unlock (UnlockRequest) returns (UnlockResponse);
+  rpc handleFailure (HandleFailureRequest) returns (HandleFailureResponse);
+  rpc handleBpmnError (HandleBpmnErrorRequest) returns (HandleBpmnErrorResponse);
+  rpc extendLock (ExtendLockRequest) returns (ExtendLockResponse);
+}
+
+// The request message for fetching tasks
+message FetchAndLockRequest {
+  message FetchExternalTaskTopic {
+    string topicName = 1;
+    string businessKey = 2;
+    string processDefinitionId = 3;
+    repeated string processDefinitionIdIn = 4;
+    string processDefinitionKey = 5;
+    repeated string processDefinitionKeyIn = 6;
+    string processDefinitionVersionTag = 7;
+    int64 lockDuration = 8;
+    bool deserializeValues = 9;
+    bool localVariables = 10;
+    bool withoutTenantId = 11;
+    repeated string tenantIdIn = 12;
+  }
+  
+  string workerId = 1;
+  bool usePriority = 2;
+  repeated FetchExternalTaskTopic topic = 3;
+}
+
+// The response message fetching tasks
+message FetchAndLockResponse {
+  string id = 1;
+  string workerId = 2;
+  string topicName = 3;
+}
+
+// The request message for completing a task
+message CompleteRequest {
+  string id = 1;
+  string workerId = 2;
+}
+
+// The response message for completing a task
+message CompleteResponse {
+  string status = 1;
+}
+
+// The request message for unlocking a task
+message UnlockRequest {
+  string id = 1;
+}
+
+// The response message for unlocking a task
+message UnlockResponse {
+  string status = 1;
+}
+
+// The request message for reporting a failure for a task
+message HandleFailureRequest {
+  string id = 1;
+  string workerId = 2;
+  string errorMessage = 3;
+  string errorDetails = 4;
+  int32 retries = 5;
+  int64 retryTimeout = 6;
+}
+
+// The response message for reporting a failure for a task
+message HandleFailureResponse {
+  string status = 1;
+}
+
+// The request message for reporting a BPMN error for a task
+message HandleBpmnErrorRequest {
+  string id = 1;
+  string workerId = 2;
+  string errorCode = 3;
+  string errorMessage = 4;
+}
+
+// The response message for for reporting a BPMN error a task
+message HandleBpmnErrorResponse {
+  string status = 1;
+}
+
+// The request message for completing a task
+message ExtendLockRequest {
+  string id = 1;
+  string workerId = 2;
+  int64 duration = 3;
+}
+
+// The response message for completing a task
+message ExtendLockResponse {
+  string status = 1;
+}

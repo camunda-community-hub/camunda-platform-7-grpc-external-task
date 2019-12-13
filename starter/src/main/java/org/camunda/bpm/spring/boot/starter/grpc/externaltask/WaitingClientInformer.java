@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.engine.ExternalTaskService;
 import org.camunda.bpm.engine.externaltask.LockedExternalTask;
-import org.camunda.bpm.grpc.FetchAndLockReply;
+import org.camunda.bpm.grpc.FetchAndLockResponse;
 import org.camunda.bpm.grpc.FetchAndLockRequest;
 import org.camunda.bpm.spring.boot.starter.event.PostDeployEvent;
 import org.camunda.bpm.spring.boot.starter.event.PreUndeployEvent;
@@ -28,33 +28,33 @@ public class WaitingClientInformer {
 
   private ExternalTaskCreationListener externalTaskCreationListener;
 
-  private List<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>>> waitingClients = Collections.synchronizedList(new ArrayList<>());
+  private List<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockResponse>>> waitingClients = Collections.synchronizedList(new ArrayList<>());
 
-  public void addWaitingClient(FetchAndLockRequest request, StreamObserver<FetchAndLockReply> client) {
+  public void addWaitingClient(FetchAndLockRequest request, StreamObserver<FetchAndLockResponse> client) {
     waitingClients.add(Pair.of(request, client));
   }
 
   public void informClients() {
     log.info("Found {} pending requests", waitingClients.size());
-    for (Iterator<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>>> iterator = waitingClients.iterator(); iterator.hasNext();) {
-      Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>> pair = iterator.next();
-      // TODO build Java API request from request DTO
-      List<LockedExternalTask> lockedTasks = externalTaskService
-          .fetchAndLock(1, pair.getLeft().getWorkerId())
-          .topic(pair.getLeft().getTopicName(), ExternalTaskServiceGrpc.LOCK_TIMEOUT)
-          .execute();
+    for (Iterator<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockResponse>>> iterator = waitingClients.iterator(); iterator.hasNext();) {
+      Pair<FetchAndLockRequest, StreamObserver<FetchAndLockResponse>> pair = iterator.next();
+      List<LockedExternalTask> lockedTasks = ExternalTaskServiceGrpc.createQuery(pair.getLeft(), externalTaskService).execute();
       if (!lockedTasks.isEmpty()) {
-        log.info("informed client about locked external task {}", lockedTasks.get(0).getId());
+        LockedExternalTask lockedExternalTask = lockedTasks.get(0);
+        log.info("informed client about locked external task {}", lockedExternalTask.getId());
         iterator.remove();
-        pair.getRight().onNext(FetchAndLockReply.newBuilder().setId(lockedTasks.get(0).getId()).build());
+        pair.getRight().onNext(FetchAndLockResponse.newBuilder()
+            .setId(lockedExternalTask.getId())
+            .setWorkerId(lockedExternalTask.getWorkerId())
+            .build());
       }
     }
   }
 
-  public void removeClientRequests(StreamObserver<FetchAndLockReply> client) {
+  public void removeClientRequests(StreamObserver<FetchAndLockResponse> client) {
     log.info("Removing all pending requests for client");
-    for (Iterator<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>>> iterator = waitingClients.iterator(); iterator.hasNext();) {
-      Pair<FetchAndLockRequest, StreamObserver<FetchAndLockReply>> pair = iterator.next();
+    for (Iterator<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockResponse>>> iterator = waitingClients.iterator(); iterator.hasNext();) {
+      Pair<FetchAndLockRequest, StreamObserver<FetchAndLockResponse>> pair = iterator.next();
       if (pair.getRight().equals(client)) {
         iterator.remove();
       }

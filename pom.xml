@@ -1,0 +1,126 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda</groupId>
+    <artifactId>camunda-bpm-release-parent</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+    <!-- DO NOT REMOVE EMPTY TAG https://issues.apache.org/jira/browse/MNG-4687 -->
+    <relativePath />
+  </parent>
+
+  <groupId>org.camunda.bpm.grpc.externaltask.project</groupId>
+  <artifactId>camunda-bpm-grpc-external-task-root</artifactId>
+  <inceptionYear>2019</inceptionYear>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>core</module>
+    <module>starter</module>
+    <module>client-core</module>
+  </modules>
+
+  <properties>
+    <camunda.version>7.13.0-SNAPSHOT</camunda.version>
+    <camundaSpringBoot.version>3.5.0-SNAPSHOT</camundaSpringBoot.version>
+    
+    <springBoot.version>2.2.1.RELEASE</springBoot.version>
+    <grpc.version>1.23.0</grpc.version>
+    <grpcSpringBootStarter.version>3.5.0</grpcSpringBootStarter.version>
+
+    <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
+    <!-- disable javadoc linter for JDK8 to not fail on incomplete javadoc -->
+    <additionalparam>-Xdoclint:none</additionalparam>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <failOnMissingWebXml>false</failOnMissingWebXml>
+    <license.includeTransitiveDependencies>false</license.includeTransitiveDependencies>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.camunda.bpm</groupId>
+        <artifactId>camunda-bom</artifactId>
+        <version>${camunda.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <!-- Import dependency management from Spring Boot -->
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springBoot.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-protobuf</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-stub</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-netty-shaded</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.github.lognet</groupId>
+        <artifactId>grpc-spring-boot-starter</artifactId>
+        <version>${grpcSpringBootStarter.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.camunda.bpm.springboot</groupId>
+        <artifactId>camunda-bpm-spring-boot-starter</artifactId>
+        <version>${camundaSpringBoot.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git@github.com:tmetzke/camunda-bpm-grpc-external-task.git</connection>
+    <url>scm:git:git@github.com:tmetzke/camunda-bpm-grpc-external-task.git</url>
+    <developerConnection>scm:git:git@github.com:tmetzke/camunda-bpm-grpc-external-task.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <!-- repositories used for distribution of releases and snapshots, DO NOT 
+    CHANGE -->
+  <distributionManagement>
+    <repository>
+      <id>camunda-nexus</id>
+      <name>camunda bpm</name>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-bpm</url>
+    </repository>
+    <snapshotRepository>
+      <id>camunda-nexus</id>
+      <name>camunda bpm snapshots</name>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-bpm-snapshots</url>
+      <uniqueVersion>true</uniqueVersion>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <repositories>
+    <repository>
+      <id>camunda.com.public</id>
+      <name>Camunda Repository</name>
+      <url>https://app.camunda.com/nexus/content/groups/public</url>
+    </repository>
+  </repositories>
+
+</project>
