@@ -1,4 +1,4 @@
-# gRPC API for <img src="Xmunda.png" alt="Xmunda" width="150"/> BPM Runtime External Tasks
+# gRPC API for Camunda BPM Runtime External Tasks
 This project provides a gRPC API for external tasks based on the Camunda BPM runtime and Spring Boot.
 
 You can use the [Spring Boot Starter](./starter) in your server Spring Boot application to provide the API.
