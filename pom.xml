@@ -28,7 +28,7 @@
     <camunda.version>7.14.0-SNAPSHOT</camunda.version>
     
     <springBoot.version>2.3.2.RELEASE</springBoot.version>
-    <grpc.version>1.30.2</grpc.version>
+    <grpc.version>1.31.0</grpc.version>
     <grpcSpringBootStarter.version>3.5.6</grpcSpringBootStarter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
