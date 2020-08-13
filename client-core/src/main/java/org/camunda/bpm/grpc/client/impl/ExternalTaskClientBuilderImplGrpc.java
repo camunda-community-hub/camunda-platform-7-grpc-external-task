@@ -16,15 +16,23 @@
  */
 package org.camunda.bpm.grpc.client.impl;
 
-public class ExternalTaskClientException extends RuntimeException {
+import org.camunda.bpm.client.impl.ExternalTaskClientBuilderImpl;
+import org.camunda.bpm.grpc.client.topic.impl.TopicSubscriptionManagerGrpc;
 
-  private static final long serialVersionUID = 1L;
+public class ExternalTaskClientBuilderImplGrpc extends ExternalTaskClientBuilderImpl {
 
-  public ExternalTaskClientException(String message) {
-    super(message);
+  @Override
+  protected void initTopicSubscriptionManager() {
+    topicSubscriptionManager = new TopicSubscriptionManagerGrpc(engineClient, typedValues, lockDuration);
+
+    if (isAutoFetchingEnabled()) {
+      topicSubscriptionManager.start();
+    }
   }
 
-  public ExternalTaskClientException(String message, Throwable e) {
-    super(message, e);
+  @Override
+  protected void initEngineClient() {
+    engineClient = new EngineClientGrpc(workerId, maxTasks, asyncResponseTimeout, baseUrl, usePriority);
   }
+
 }

@@ -26,6 +26,7 @@
 
   <properties>
     <camunda.version>7.14.0-SNAPSHOT</camunda.version>
+    <camunda.externalTaskJava.version>1.4.0-SNAPSHOT</camunda.externalTaskJava.version>
     
     <springBoot.version>2.3.2.RELEASE</springBoot.version>
     <grpc.version>1.30.2</grpc.version>
@@ -47,6 +48,11 @@
         <version>${camunda.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.camunda.bpm</groupId>
+        <artifactId>camunda-external-task-client</artifactId>
+        <version>${camunda.externalTaskJava.version}</version>
       </dependency>
       <dependency>
         <!-- Import dependency management from Spring Boot -->
