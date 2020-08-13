@@ -14,45 +14,64 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.grpc.client.task.impl;
+package org.camunda.bpm.grpc.client.impl;
 
+import java.util.Map;
 import java.util.function.Function;
 
+import org.camunda.bpm.client.impl.EngineClient;
+import org.camunda.bpm.client.impl.EngineClientException;
 import org.camunda.bpm.grpc.CompleteRequest;
 import org.camunda.bpm.grpc.CompleteResponse;
 import org.camunda.bpm.grpc.ExtendLockRequest;
 import org.camunda.bpm.grpc.ExtendLockResponse;
+import org.camunda.bpm.grpc.ExternalTaskGrpc;
+import org.camunda.bpm.grpc.ExternalTaskGrpc.ExternalTaskBlockingStub;
 import org.camunda.bpm.grpc.ExternalTaskGrpc.ExternalTaskStub;
+import org.camunda.bpm.grpc.FetchAndLockRequest;
 import org.camunda.bpm.grpc.FetchAndLockResponse;
+import org.camunda.bpm.grpc.GetBinaryVariableRequest;
+import org.camunda.bpm.grpc.GetBinaryVariableResponse;
 import org.camunda.bpm.grpc.HandleBpmnErrorRequest;
 import org.camunda.bpm.grpc.HandleBpmnErrorResponse;
 import org.camunda.bpm.grpc.HandleFailureRequest;
 import org.camunda.bpm.grpc.HandleFailureResponse;
 import org.camunda.bpm.grpc.UnlockRequest;
 import org.camunda.bpm.grpc.UnlockResponse;
-import org.camunda.bpm.grpc.client.task.ExternalTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
-/**
- *
- */
-public class ExternalTaskServiceImpl implements ExternalTaskService {
+public class EngineClientGrpc extends EngineClient {
 
-  private static final Logger log = LoggerFactory.getLogger(ExternalTaskServiceImpl.class);
+  private static final Logger LOG = LoggerFactory.getLogger(EngineClientGrpc.class);
 
-  private ExternalTaskStub stub;
+  protected ManagedChannel channel;
+  protected ExternalTaskStub stub;
+  protected ExternalTaskBlockingStub blockingStub;
 
-  public ExternalTaskServiceImpl(ExternalTaskStub stub) {
-    this.stub = stub;
+  public EngineClientGrpc(String workerId, int maxTasks, Long asyncResponseTimeout, String baseUrl) {
+    this(workerId, maxTasks, asyncResponseTimeout, baseUrl, true);
+  }
+
+  public EngineClientGrpc(String workerId, int maxTasks, Long asyncResponseTimeout, String baseUrl, boolean usePriority) {
+    super(workerId, maxTasks, asyncResponseTimeout, baseUrl, null, usePriority);
+    this.channel = ManagedChannelBuilder.forTarget(baseUrl).usePlaintext().build();
+    this.stub = ExternalTaskGrpc.newStub(channel);
+    this.blockingStub = ExternalTaskGrpc.newBlockingStub(channel);
+  }
+
+  public StreamObserver<FetchAndLockRequest> fetchAndLock(StreamObserver<FetchAndLockResponse> responseObserver) {
+    return stub.fetchAndLock(responseObserver);
   }
 
   @Override
-  public void unlock(FetchAndLockResponse externalTask) {
+  public void unlock(String taskId) throws EngineClientException {
     UnlockRequest request = UnlockRequest.newBuilder()
-        .setId(externalTask.getId())
+        .setId(taskId)
         .build();
 
     stub.unlock(request, this.<UnlockResponse>createLoggingObserver(
@@ -61,23 +80,27 @@ public class ExternalTaskServiceImpl implements ExternalTaskService {
   }
 
   @Override
-  public void complete(FetchAndLockResponse externalTask) {
+  public void complete(String taskId, Map<String, Object> variables, Map<String, Object> localVariables) throws EngineClientException {
+    // TODO add localVariables and variables to proto
+//    Map<String, TypedValueField> typedValueDtoMap = typedValues.serializeVariables(variables);
+//    Map<String, TypedValueField> localTypedValueDtoMap = typedValues.serializeVariables(localVariables);
 
     CompleteRequest request = CompleteRequest.newBuilder()
-        .setWorkerId(externalTask.getWorkerId())
-        .setId(externalTask.getId())
+        .setWorkerId(workerId)
+        .setId(taskId)
+//        .setLocalVariables(localTypedValueDtoMap)
+//        .setVariables(typedValueDtoMap)
         .build();
 
     stub.complete(request, this.<CompleteResponse>createLoggingObserver(
         response -> "Task " + request.getId() + " completed with status " + response.getStatus(),
         "Could not complete the task " + request.getId() + " (server error)"));
-
   }
 
   @Override
-  public void handleFailure(FetchAndLockResponse externalTask, String errorMessage, String errorDetails, int retries, long retryTimeout) {
+  public void failure(String taskId, String errorMessage, String errorDetails, int retries, long retryTimeout) throws EngineClientException {
     HandleFailureRequest request = HandleFailureRequest.newBuilder()
-        .setId(externalTask.getId())
+        .setId(taskId)
         .setErrorMessage(errorMessage)
         .setErrorDetails(errorDetails)
         .setRetries(retries)
@@ -90,17 +113,15 @@ public class ExternalTaskServiceImpl implements ExternalTaskService {
   }
 
   @Override
-  public void handleBpmnError(FetchAndLockResponse externalTask, String errorCode) {
-    handleBpmnError(externalTask, errorCode, null);
+  public void bpmnError(String taskId, String errorCode, String errorMessage, Map<String, Object> variables) throws EngineClientException {
+    // TODO add variables to proto
+//    Map<String, TypedValueField> typeValueDtoMap = typedValues.serializeVariables(variables);
 
-  }
-
-  @Override
-  public void handleBpmnError(FetchAndLockResponse externalTask, String errorCode, String errorMessage) {
     HandleBpmnErrorRequest request = HandleBpmnErrorRequest.newBuilder()
-        .setId(externalTask.getId())
+        .setId(taskId)
         .setErrorCode(errorCode)
         .setErrorMessage(errorMessage)
+//        .setVariables(typeValueDtoMap)
         .build();
 
     stub.handleBpmnError(request, this.<HandleBpmnErrorResponse>createLoggingObserver(
@@ -109,9 +130,9 @@ public class ExternalTaskServiceImpl implements ExternalTaskService {
   }
 
   @Override
-  public void extendLock(FetchAndLockResponse externalTask, long newDuration) {
+  public void extendLock(String taskId, long newDuration) throws EngineClientException {
     ExtendLockRequest request = ExtendLockRequest.newBuilder()
-        .setId(externalTask.getId())
+        .setId(taskId)
         .setDuration(newDuration)
         .build();
 
@@ -120,16 +141,30 @@ public class ExternalTaskServiceImpl implements ExternalTaskService {
         "Could not extend the lock for the task " + request.getId() + " (server error)"));
   }
 
+  @Override
+  public byte[] getLocalBinaryVariable(String variableName, String processInstanceId) throws EngineClientException {
+    GetBinaryVariableRequest request = GetBinaryVariableRequest.newBuilder()
+        .setProcessInstanceId(processInstanceId)
+        .setVariableName(variableName)
+        .build();
+
+    GetBinaryVariableResponse localBinaryVariable = blockingStub.getLocalBinaryVariable(request);
+    if (localBinaryVariable == null || localBinaryVariable.getData() == null || localBinaryVariable.getData().isEmpty()) {
+      return null;
+    }
+    return localBinaryVariable.getData().toByteArray();
+  }
+
   protected <T> StreamObserver<T> createLoggingObserver(Function<T, String> succesMessageFunction, String errorMessage) {
     return new StreamObserver<T>() {
       @Override
       public void onNext(T response) {
-        log.info(succesMessageFunction.apply(response));
+        LOG.info(succesMessageFunction.apply(response));
       }
 
       @Override
       public void onError(Throwable throwable) {
-        log.error(errorMessage, throwable);
+        LOG.error(errorMessage, throwable);
       }
 
       @Override
@@ -138,4 +173,5 @@ public class ExternalTaskServiceImpl implements ExternalTaskService {
       }
     };
   }
+
 }

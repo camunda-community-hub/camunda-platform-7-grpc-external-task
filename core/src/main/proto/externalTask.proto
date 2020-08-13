@@ -6,11 +6,12 @@ package org.camunda.bpm.grpc;
 service ExternalTask {
   // fetches and locks external tasks
   rpc fetchAndLock (stream FetchAndLockRequest) returns (stream FetchAndLockResponse) {};
-  rpc complete (CompleteRequest) returns (CompleteResponse);
-  rpc unlock (UnlockRequest) returns (UnlockResponse);
-  rpc handleFailure (HandleFailureRequest) returns (HandleFailureResponse);
-  rpc handleBpmnError (HandleBpmnErrorRequest) returns (HandleBpmnErrorResponse);
-  rpc extendLock (ExtendLockRequest) returns (ExtendLockResponse);
+  rpc complete (CompleteRequest) returns (CompleteResponse) {};
+  rpc unlock (UnlockRequest) returns (UnlockResponse) {};
+  rpc handleFailure (HandleFailureRequest) returns (HandleFailureResponse) {};
+  rpc handleBpmnError (HandleBpmnErrorRequest) returns (HandleBpmnErrorResponse) {};
+  rpc extendLock (ExtendLockRequest) returns (ExtendLockResponse) {};
+  rpc getLocalBinaryVariable (GetBinaryVariableRequest) returns (GetBinaryVariableResponse) {};
 }
 
 // The request message for fetching tasks
@@ -101,4 +102,15 @@ message ExtendLockRequest {
 // The response message for completing a task
 message ExtendLockResponse {
   string status = 1;
+}
+
+// The request message for receiving the binary value of a variable
+message GetBinaryVariableRequest {
+  string processInstanceId = 1;
+  string variableName = 2;
+}
+
+// 
+message GetBinaryVariableResponse {
+  bytes data = 1;
 }

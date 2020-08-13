@@ -26,6 +26,7 @@ import org.camunda.bpm.grpc.FetchAndLockRequest.FetchExternalTaskTopic;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,6 +52,9 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
       @Override
       public void onError(Throwable t) {
         log.error("uh oh, server received error", t);
+        if (Status.CANCELLED.equals(Status.fromThrowable(t))) {
+          informer.removeClientRequests(responseObserver);
+        }
       }
 
       @Override
