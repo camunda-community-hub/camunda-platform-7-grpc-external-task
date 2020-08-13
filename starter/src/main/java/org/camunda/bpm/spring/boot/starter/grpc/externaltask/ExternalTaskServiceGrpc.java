@@ -3,7 +3,9 @@ package org.camunda.bpm.spring.boot.starter.grpc.externaltask;
 import static java.lang.Boolean.TRUE;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.camunda.bpm.engine.ExternalTaskService;
 import org.camunda.bpm.engine.externaltask.ExternalTaskQueryBuilder;
@@ -25,6 +27,8 @@ import org.camunda.bpm.grpc.FetchAndLockRequest;
 import org.camunda.bpm.grpc.FetchAndLockRequest.FetchExternalTaskTopic;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import com.google.protobuf.Timestamp;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -127,7 +131,7 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
     }
   }
 
-  private void informClient(FetchAndLockRequest request, StreamObserver<FetchAndLockResponse> client) {
+  protected void informClient(FetchAndLockRequest request, StreamObserver<FetchAndLockResponse> client) {
     ExternalTaskQueryBuilder fetchBuilder = createQuery(request, externalTaskService);
     List<LockedExternalTask> lockedTasks = fetchBuilder.execute();
     if (lockedTasks.isEmpty()) {
@@ -136,9 +140,26 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
       informer.addWaitingClient(request, client);
     } else {
       FetchAndLockResponse reply = FetchAndLockResponse.newBuilder()
-          .setId(lockedTasks.get(0).getId())
-          .setWorkerId(request.getWorkerId())
-          .setTopicName(lockedTasks.get(0).getTopicName())
+          .setId(getSafe(lockedTasks.get(0).getId()))
+          .setWorkerId(getSafe(request.getWorkerId()))
+          .setTopicName(getSafe(lockedTasks.get(0).getTopicName()))
+          .setLockExpirationTime(getTimestamp(lockedTasks.get(0).getLockExpirationTime()))
+          .setRetries(getSafe(lockedTasks.get(0).getRetries()))
+          .setErrorMessage(getSafe(lockedTasks.get(0).getErrorMessage()))
+          .setErrorDetails(getSafe(lockedTasks.get(0).getErrorDetails()))
+          .setProcessInstanceId(getSafe(lockedTasks.get(0).getProcessInstanceId()))
+          .setExecutionId(getSafe(lockedTasks.get(0).getExecutionId()))
+          .setActivityId(getSafe(lockedTasks.get(0).getActivityId()))
+          .setActivityInstanceId(getSafe(lockedTasks.get(0).getActivityInstanceId()))
+          .setProcessDefinitionId(getSafe(lockedTasks.get(0).getProcessDefinitionId()))
+          .setProcessDefinitionKey(getSafe(lockedTasks.get(0).getProcessDefinitionKey()))
+          .setProcessDefinitionVersionTag(getSafe(lockedTasks.get(0).getProcessDefinitionVersionTag()))
+          .setTenantId(getSafe(lockedTasks.get(0).getTenantId()))
+          .setPriority(lockedTasks.get(0).getPriority())
+          .setBusinessKey(getSafe(lockedTasks.get(0).getBusinessKey()))
+          .putAllExtensionProperties(lockedTasks.get(0).getExtensionProperties())
+          // TODO add "variables" to proto
+//          .putAllVariables(lockedTasks.get(0).getVariables())
           .build();
       client.onNext(reply);
     }
@@ -154,7 +175,7 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
           ExternalTaskQueryTopicBuilder topicFetchBuilder = fetchBuilder.topic(topicDto.getTopicName(), topicDto.getLockDuration());
 
           if (notEmpty(topicDto.getBusinessKey())) {
-            topicFetchBuilder = topicFetchBuilder.businessKey(topicDto.getBusinessKey());
+            topicFetchBuilder.businessKey(topicDto.getBusinessKey());
           }
 
           if (notEmpty(topicDto.getProcessDefinitionId())) {
@@ -173,33 +194,33 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
             topicFetchBuilder.processDefinitionKeyIn(topicDto.getProcessDefinitionKeyInList().toArray(new String[topicDto.getProcessDefinitionKeyInList().size()]));
           }
 
-          // TODO add variables
-//          if (topicDto.getVariables() != null) {
-//            topicFetchBuilder = topicFetchBuilder.variables(topicDto.getVariables());
-//          }
-//
+          if (notEmpty((topicDto.getVariablesList()))) {
+            topicFetchBuilder.variables(topicDto.getVariablesList());
+          }
+
+          // TODO add "processVariables" to proto
 //          if (topicDto.getProcessVariables() != null) {
-//            topicFetchBuilder = topicFetchBuilder.processInstanceVariableEquals(topicDto.getProcessVariables());
+//            topicFetchBuilder.processInstanceVariableEquals(topicDto.getProcessVariables());
 //          }
 
           if (topicDto.getDeserializeValues()) {
-            topicFetchBuilder = topicFetchBuilder.enableCustomObjectDeserialization();
+            topicFetchBuilder.enableCustomObjectDeserialization();
           }
 
           if (topicDto.getLocalVariables()) {
-            topicFetchBuilder = topicFetchBuilder.localVariables();
+            topicFetchBuilder.localVariables();
           }
 
           if (TRUE.equals(topicDto.getWithoutTenantId())) {
-            topicFetchBuilder = topicFetchBuilder.withoutTenantId();
+            topicFetchBuilder.withoutTenantId();
           }
 
           if (notEmpty(topicDto.getTenantIdInList())) {
-            topicFetchBuilder = topicFetchBuilder.tenantIdIn(topicDto.getTenantIdInList().toArray(new String[topicDto.getTenantIdInList().size()]));
+            topicFetchBuilder.tenantIdIn(topicDto.getTenantIdInList().toArray(new String[topicDto.getTenantIdInList().size()]));
           }
 
           if(notEmpty(topicDto.getProcessDefinitionVersionTag())) {
-            topicFetchBuilder = topicFetchBuilder.processDefinitionVersionTag(topicDto.getProcessDefinitionVersionTag());
+            topicFetchBuilder.processDefinitionVersionTag(topicDto.getProcessDefinitionVersionTag());
           }
 
           fetchBuilder = topicFetchBuilder;
@@ -215,5 +236,20 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
 
   private static boolean notEmpty(Collection<?> list) {
     return list != null && !list.isEmpty();
+  }
+
+  private static int getSafe(Integer value) {
+    return Optional.ofNullable(value).orElse(0);
+  }
+
+  private static String getSafe(String value) {
+    return Optional.ofNullable(value).orElse("");
+  }
+
+  private static Timestamp getTimestamp(Date date) {
+    return date == null ? null : Timestamp.newBuilder()
+        .setSeconds(date.getTime() / 1000)
+        .setNanos((int) ((date.getTime() % 1000) * 1000000))
+        .build();
   }
 }

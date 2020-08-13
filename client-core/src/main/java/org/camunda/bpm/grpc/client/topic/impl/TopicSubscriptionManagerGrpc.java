@@ -16,7 +16,10 @@
  */
 package org.camunda.bpm.grpc.client.topic.impl;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
@@ -33,6 +36,9 @@ import org.camunda.bpm.client.variable.impl.TypedValues;
 import org.camunda.bpm.grpc.FetchAndLockRequest;
 import org.camunda.bpm.grpc.FetchAndLockRequest.FetchExternalTaskTopic;
 import org.camunda.bpm.grpc.client.impl.EngineClientGrpc;
+
+import com.google.protobuf.Timestamp;
+
 import org.camunda.bpm.grpc.FetchAndLockResponse;
 
 import io.grpc.stub.StreamObserver;
@@ -161,39 +167,41 @@ public class TopicSubscriptionManagerGrpc extends TopicSubscriptionManager {
 //    if (notEmpty(topicSubscription.getVariables())) {
 //      topicRequestDto.setVariables(topicSubscription.getVariables());
 //    }
-    if (topicSubscription.isLocalVariables()) {
-      topicRequestDto.setLocalVariables(topicSubscription.isLocalVariables());
-    }
-    // TODO add "includeExtensionProperties" to proto
-//    if (topicSubscription.isIncludeExtensionProperties()) {
-//      topicRequestDto.setIncludeExtensionProperties(topicSubscription.isIncludeExtensionProperties());
-//    }
+    topicRequestDto.setLocalVariables(topicSubscription.isLocalVariables());
+    topicRequestDto.setIncludeExtensionProperties(topicSubscription.isIncludeExtensionProperties());
     return topicRequestDto.build();
   }
 
   protected static ExternalTask to(FetchAndLockResponse response) {
-    // TODO add attributes to response in proto
+    // TODO add "variables" to proto
     ExternalTaskImpl task = new ExternalTaskImpl();
-//    task.setActivityId(response.getActivityId());
-//    task.setActivityInstanceId(response.getActivityInstanceId());
-//    task.setErrorMessage(response.getErrorMessage());
-//    task.setErrorDetails(response.getErrorDetails());
-//    task.setExecutionId(response.getExecutionId());
+    task.setActivityId(response.getActivityId());
+    task.setActivityInstanceId(response.getActivityInstanceId());
+    task.setErrorMessage(response.getErrorMessage());
+    task.setErrorDetails(response.getErrorDetails());
+    task.setExecutionId(response.getExecutionId());
     task.setId(response.getId());
-//    task.setLockExpirationTime(response.getLockExpirationTime());
-//    task.setProcessDefinitionId(response.getProcessDefinitionId());
-//    task.setProcessDefinitionKey(response.getProcessDefinitionKey());
-//    task.setProcessDefinitionVersionTag(response.getProcessDefinitionVersionTag());
-//    task.setProcessInstanceId(response.getProcessInstanceId());
-//    task.setRetries(response.getRetries());
+    task.setLockExpirationTime(getDate(response.getLockExpirationTime()));
+    task.setProcessDefinitionId(response.getProcessDefinitionId());
+    task.setProcessDefinitionKey(response.getProcessDefinitionKey());
+    task.setProcessDefinitionVersionTag(response.getProcessDefinitionVersionTag());
+    task.setProcessInstanceId(response.getProcessInstanceId());
+    task.setRetries(response.getRetries());
     task.setWorkerId(response.getWorkerId());
     task.setTopicName(response.getTopicName());
-//    task.setTenantId(response.getTenantId());
-//    task.setPriority(response.getPriority());
+    task.setTenantId(response.getTenantId());
+    task.setPriority(response.getPriority());
 //    task.setVariables(response.getVariables());
-//    task.setBusinessKey(response.getBusinessKey());
-//    task.setExtensionProperties(response.getExtensionProperties());
+    task.setBusinessKey(response.getBusinessKey());
+    task.setExtensionProperties(response.getExtensionPropertiesMap());
     return task;
+  }
+
+  private static Date getDate(Timestamp ts) {
+    return Date.from(Instant
+      .ofEpochSecond(ts.getSeconds() , ts.getNanos())
+      .atZone(ZoneId.systemDefault())
+      .toInstant());
   }
 
   private static boolean notEmpty(String value) {

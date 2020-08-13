@@ -1,4 +1,7 @@
 syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
 option java_multiple_files = true;
 package org.camunda.bpm.grpc;
 
@@ -29,8 +32,10 @@ message FetchAndLockRequest {
     bool localVariables = 10;
     bool withoutTenantId = 11;
     repeated string tenantIdIn = 12;
+    bool includeExtensionProperties = 13;
+    repeated string variables = 14;
   }
-  
+
   string workerId = 1;
   bool usePriority = 2;
   repeated FetchExternalTaskTopic topic = 3;
@@ -41,6 +46,22 @@ message FetchAndLockResponse {
   string id = 1;
   string workerId = 2;
   string topicName = 3;
+  string activityId = 4;
+  string activityInstanceId = 5;
+  string errorMessage = 6;
+  string errorDetails = 7;
+  string executionId = 8;
+  google.protobuf.Timestamp lockExpirationTime = 9;
+  string processDefinitionKey = 10;
+  string processDefinitionVersionTag = 11;
+  string processInstanceId = 12;
+  int32 retries = 13;
+  string tenantId = 14;
+  int64 priority = 15;
+  string businessKey = 16;
+  map<string, string> extensionProperties = 17;
+  string processDefinitionId = 18;
+  // map<string, TypedValueField> variables = 19;
 }
 
 // The request message for completing a task
@@ -110,7 +131,7 @@ message GetBinaryVariableRequest {
   string variableName = 2;
 }
 
-// 
+// The response for the binary value of a variable
 message GetBinaryVariableResponse {
   bytes data = 1;
 }
