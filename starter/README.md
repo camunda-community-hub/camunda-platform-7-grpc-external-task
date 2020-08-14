@@ -9,3 +9,4 @@ Use it in your project by adding the following dependency to your Spring Boot ap
   <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
+
