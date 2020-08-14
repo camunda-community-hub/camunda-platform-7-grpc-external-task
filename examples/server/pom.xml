@@ -25,7 +25,7 @@
 
     <dependency>
       <groupId>org.camunda.bpm.springboot</groupId>
-      <artifactId>camunda-bpm-spring-boot-starter-webapp</artifactId>
+      <artifactId>camunda-bpm-spring-boot-starter-webapp-ee</artifactId>
     </dependency>
 
     <dependency>
@@ -55,19 +55,12 @@
     <finalName>${project.artifactId}</finalName>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.6.0</version>
-        <configuration>
-          <mainClass>org.camunda.bpm.grpc.CamundaApplication</mainClass>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>${springBoot.version}</version>
         <configuration>
           <layout>ZIP</layout>
+          <mainClass>org.camunda.bpm.grpc.CamundaApplication</mainClass>
         </configuration>
         <executions>
           <execution>

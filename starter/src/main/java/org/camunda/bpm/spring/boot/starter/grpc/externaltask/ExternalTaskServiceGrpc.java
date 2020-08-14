@@ -2,33 +2,46 @@ package org.camunda.bpm.spring.boot.starter.grpc.externaltask;
 
 import static java.lang.Boolean.TRUE;
 
-import java.util.Collection;
+import java.time.ZonedDateTime;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Map.Entry;
 
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.ExternalTaskService;
+import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.externaltask.ExternalTaskQueryBuilder;
 import org.camunda.bpm.engine.externaltask.ExternalTaskQueryTopicBuilder;
 import org.camunda.bpm.engine.externaltask.LockedExternalTask;
+import org.camunda.bpm.engine.variable.VariableMap;
+import org.camunda.bpm.engine.variable.Variables;
+import org.camunda.bpm.engine.variable.impl.type.PrimitiveValueTypeImpl.DateTypeImpl;
+import org.camunda.bpm.engine.variable.type.FileValueType;
+import org.camunda.bpm.engine.variable.type.PrimitiveValueType;
+import org.camunda.bpm.engine.variable.type.SerializableValueType;
+import org.camunda.bpm.engine.variable.type.ValueType;
+import org.camunda.bpm.engine.variable.type.ValueTypeResolver;
+import org.camunda.bpm.engine.variable.value.TypedValue;
 import org.camunda.bpm.grpc.CompleteRequest;
 import org.camunda.bpm.grpc.CompleteResponse;
 import org.camunda.bpm.grpc.ExtendLockRequest;
 import org.camunda.bpm.grpc.ExtendLockResponse;
 import org.camunda.bpm.grpc.ExternalTaskGrpc.ExternalTaskImplBase;
+import org.camunda.bpm.grpc.FetchAndLockRequest;
+import org.camunda.bpm.grpc.FetchAndLockRequest.FetchExternalTaskTopic;
 import org.camunda.bpm.grpc.FetchAndLockResponse;
 import org.camunda.bpm.grpc.HandleBpmnErrorRequest;
 import org.camunda.bpm.grpc.HandleBpmnErrorResponse;
 import org.camunda.bpm.grpc.HandleFailureRequest;
 import org.camunda.bpm.grpc.HandleFailureResponse;
+import org.camunda.bpm.grpc.TypedValueFieldDto;
+import org.camunda.bpm.grpc.core.VariableUtils;
 import org.camunda.bpm.grpc.UnlockRequest;
 import org.camunda.bpm.grpc.UnlockResponse;
-import org.camunda.bpm.grpc.FetchAndLockRequest;
-import org.camunda.bpm.grpc.FetchAndLockRequest.FetchExternalTaskTopic;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.google.protobuf.Timestamp;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -40,6 +53,9 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
 
   @Autowired
   private ExternalTaskService externalTaskService;
+
+  @Autowired
+  private ProcessEngine processEngine;
 
   @Autowired
   private WaitingClientInformer informer;
@@ -73,7 +89,9 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
   @Override
   public void complete(CompleteRequest request, StreamObserver<CompleteResponse> responseObserver) {
     try {
-      externalTaskService.complete(request.getId(), request.getWorkerId());
+      VariableMap variables = fromTypedValueFields(request.getVariablesMap());
+      VariableMap localVariables = fromTypedValueFields(request.getLocalVariablesMap());
+      externalTaskService.complete(request.getId(), request.getWorkerId(), variables, localVariables);
       responseObserver.onNext(CompleteResponse.newBuilder().setStatus("200").build());
       responseObserver.onCompleted();
     } catch (Exception e) {
@@ -139,33 +157,90 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
       // notify later when external task created for the topic in the engine
       informer.addWaitingClient(request, client);
     } else {
-      FetchAndLockResponse reply = FetchAndLockResponse.newBuilder()
-          .setId(getSafe(lockedTasks.get(0).getId()))
-          .setWorkerId(getSafe(request.getWorkerId()))
-          .setTopicName(getSafe(lockedTasks.get(0).getTopicName()))
-          .setLockExpirationTime(getTimestamp(lockedTasks.get(0).getLockExpirationTime()))
-          .setRetries(getSafe(lockedTasks.get(0).getRetries()))
-          .setErrorMessage(getSafe(lockedTasks.get(0).getErrorMessage()))
-          .setErrorDetails(getSafe(lockedTasks.get(0).getErrorDetails()))
-          .setProcessInstanceId(getSafe(lockedTasks.get(0).getProcessInstanceId()))
-          .setExecutionId(getSafe(lockedTasks.get(0).getExecutionId()))
-          .setActivityId(getSafe(lockedTasks.get(0).getActivityId()))
-          .setActivityInstanceId(getSafe(lockedTasks.get(0).getActivityInstanceId()))
-          .setProcessDefinitionId(getSafe(lockedTasks.get(0).getProcessDefinitionId()))
-          .setProcessDefinitionKey(getSafe(lockedTasks.get(0).getProcessDefinitionKey()))
-          .setProcessDefinitionVersionTag(getSafe(lockedTasks.get(0).getProcessDefinitionVersionTag()))
-          .setTenantId(getSafe(lockedTasks.get(0).getTenantId()))
-          .setPriority(lockedTasks.get(0).getPriority())
-          .setBusinessKey(getSafe(lockedTasks.get(0).getBusinessKey()))
-          .putAllExtensionProperties(lockedTasks.get(0).getExtensionProperties())
-          // TODO add "variables" to proto
-//          .putAllVariables(lockedTasks.get(0).getVariables())
-          .build();
+      FetchAndLockResponse reply = fromLockedTask(request, lockedTasks);
       client.onNext(reply);
     }
   }
 
-  public static ExternalTaskQueryBuilder createQuery(FetchAndLockRequest request, ExternalTaskService externalTaskService) {
+  protected FetchAndLockResponse fromLockedTask(FetchAndLockRequest request, List<LockedExternalTask> lockedTasks) {
+    return FetchAndLockResponse.newBuilder()
+      .setId(VariableUtils.getSafe(lockedTasks.get(0).getId()))
+      .setWorkerId(VariableUtils.getSafe(request.getWorkerId()))
+      .setTopicName(VariableUtils.getSafe(lockedTasks.get(0).getTopicName()))
+      .setLockExpirationTime(VariableUtils.getTimestamp(lockedTasks.get(0).getLockExpirationTime()))
+      .setRetries(VariableUtils.getSafe(lockedTasks.get(0).getRetries()))
+      .setErrorMessage(VariableUtils.getSafe(lockedTasks.get(0).getErrorMessage()))
+      .setErrorDetails(VariableUtils.getSafe(lockedTasks.get(0).getErrorDetails()))
+      .setProcessInstanceId(VariableUtils.getSafe(lockedTasks.get(0).getProcessInstanceId()))
+      .setExecutionId(VariableUtils.getSafe(lockedTasks.get(0).getExecutionId()))
+      .setActivityId(VariableUtils.getSafe(lockedTasks.get(0).getActivityId()))
+      .setActivityInstanceId(VariableUtils.getSafe(lockedTasks.get(0).getActivityInstanceId()))
+      .setProcessDefinitionId(VariableUtils.getSafe(lockedTasks.get(0).getProcessDefinitionId()))
+      .setProcessDefinitionKey(VariableUtils.getSafe(lockedTasks.get(0).getProcessDefinitionKey()))
+      .setProcessDefinitionVersionTag(VariableUtils.getSafe(lockedTasks.get(0).getProcessDefinitionVersionTag()))
+      .setTenantId(VariableUtils.getSafe(lockedTasks.get(0).getTenantId()))
+      .setPriority(lockedTasks.get(0).getPriority())
+      .setBusinessKey(VariableUtils.getSafe(lockedTasks.get(0).getBusinessKey()))
+      .putAllExtensionProperties(lockedTasks.get(0).getExtensionProperties())
+      .putAllVariables(VariableUtils.toTypedValueFields(lockedTasks.get(0).getVariables()))
+      .build();
+  }
+
+  protected VariableMap fromTypedValueFields(Map<String, TypedValueFieldDto> variablesMap) {
+    VariableMap map = Variables.createVariables();
+    for (Entry<String, TypedValueFieldDto> entry : variablesMap.entrySet()) {
+      Object value = VariableUtils.unpack(entry.getValue().getValue());
+      Map<String, Object> valueInfo = VariableUtils.unpackMap(entry.getValue().getValueInfoMap());
+      map.putValueTyped(entry.getKey(), toTypedValue(entry.getValue().getType(), value, valueInfo));
+    }
+    return map;
+  }
+
+  protected TypedValue toTypedValue(String type, Object value, Map<String, Object> valueInfo) {
+    ValueTypeResolver valueTypeResolver = processEngine.getProcessEngineConfiguration().getValueTypeResolver();
+
+    if (type == null) {
+      if (valueInfo != null && valueInfo.get(ValueType.VALUE_INFO_TRANSIENT) instanceof Boolean) {
+        return Variables.untypedValue(value, (Boolean) valueInfo.get(ValueType.VALUE_INFO_TRANSIENT));
+      }
+      return Variables.untypedValue(value);
+    }
+
+    ValueType valueType = valueTypeResolver.typeForName(StringUtils.uncapitalize(type));
+    if (valueType == null) {
+      throw new IllegalArgumentException("Unsupported value type '" + type + "'");
+    } else {
+      if (valueType instanceof PrimitiveValueType) {
+        PrimitiveValueType primitiveValueType = (PrimitiveValueType) valueType;
+        Class<?> javaType = primitiveValueType.getJavaType();
+        Object mappedValue = null;
+        if (value != null) {
+          if (javaType.isAssignableFrom(value.getClass())) {
+            mappedValue = value;
+          } else if (valueType instanceof DateTypeImpl) {
+            mappedValue = Date.from(ZonedDateTime.parse((String) value, VariableUtils.DATETIME_FORMATTER).toInstant());
+          } else {
+            throw new IllegalArgumentException(String.format("Cannot convert value '%s' of type '%s' to java type %s", value, type, javaType.getName()));
+          }
+        }
+        return valueType.createValue(mappedValue, valueInfo);
+      } else if (valueType instanceof SerializableValueType) {
+        if (value != null && !(value instanceof String)) {
+          throw new IllegalArgumentException("Must provide 'null' or String value for value of SerializableValue type '" + type + "'.");
+        }
+        return ((SerializableValueType) valueType).createValueFromSerialized((String) value, valueInfo);
+      } else if (valueType instanceof FileValueType) {
+        if (value instanceof String) {
+          value = Base64.getDecoder().decode((String) value);
+        }
+        return valueType.createValue(value, valueInfo);
+      } else {
+        return valueType.createValue(value, valueInfo);
+      }
+    }
+  }
+
+  protected static ExternalTaskQueryBuilder createQuery(FetchAndLockRequest request, ExternalTaskService externalTaskService) {
     ExternalTaskQueryBuilder fetchBuilder = externalTaskService.fetchAndLock(1,
         request.getWorkerId(),
         request.getUsePriority());
@@ -174,27 +249,27 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
         for (FetchExternalTaskTopic topicDto : request.getTopicList()) {
           ExternalTaskQueryTopicBuilder topicFetchBuilder = fetchBuilder.topic(topicDto.getTopicName(), topicDto.getLockDuration());
 
-          if (notEmpty(topicDto.getBusinessKey())) {
+          if (VariableUtils.notEmpty(topicDto.getBusinessKey())) {
             topicFetchBuilder.businessKey(topicDto.getBusinessKey());
           }
 
-          if (notEmpty(topicDto.getProcessDefinitionId())) {
+          if (VariableUtils.notEmpty(topicDto.getProcessDefinitionId())) {
             topicFetchBuilder.processDefinitionId(topicDto.getProcessDefinitionId());
           }
 
-          if (notEmpty(topicDto.getProcessDefinitionIdInList())) {
+          if (VariableUtils.notEmpty(topicDto.getProcessDefinitionIdInList())) {
             topicFetchBuilder.processDefinitionIdIn(topicDto.getProcessDefinitionIdInList().toArray(new String[topicDto.getProcessDefinitionIdInList().size()]));
           }
 
-          if (notEmpty(topicDto.getProcessDefinitionKey())) {
+          if (VariableUtils.notEmpty(topicDto.getProcessDefinitionKey())) {
             topicFetchBuilder.processDefinitionKey(topicDto.getProcessDefinitionKey());
           }
 
-          if (notEmpty(topicDto.getProcessDefinitionKeyInList())) {
+          if (VariableUtils.notEmpty(topicDto.getProcessDefinitionKeyInList())) {
             topicFetchBuilder.processDefinitionKeyIn(topicDto.getProcessDefinitionKeyInList().toArray(new String[topicDto.getProcessDefinitionKeyInList().size()]));
           }
 
-          if (notEmpty((topicDto.getVariablesList()))) {
+          if (VariableUtils.notEmpty((topicDto.getVariablesList()))) {
             topicFetchBuilder.variables(topicDto.getVariablesList());
           }
 
@@ -215,11 +290,11 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
             topicFetchBuilder.withoutTenantId();
           }
 
-          if (notEmpty(topicDto.getTenantIdInList())) {
+          if (VariableUtils.notEmpty(topicDto.getTenantIdInList())) {
             topicFetchBuilder.tenantIdIn(topicDto.getTenantIdInList().toArray(new String[topicDto.getTenantIdInList().size()]));
           }
 
-          if(notEmpty(topicDto.getProcessDefinitionVersionTag())) {
+          if(VariableUtils.notEmpty(topicDto.getProcessDefinitionVersionTag())) {
             topicFetchBuilder.processDefinitionVersionTag(topicDto.getProcessDefinitionVersionTag());
           }
 
@@ -230,26 +305,4 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
       return fetchBuilder;
   }
 
-  private static boolean notEmpty(String value) {
-    return value != null && !value.isEmpty();
-  }
-
-  private static boolean notEmpty(Collection<?> list) {
-    return list != null && !list.isEmpty();
-  }
-
-  private static int getSafe(Integer value) {
-    return Optional.ofNullable(value).orElse(0);
-  }
-
-  private static String getSafe(String value) {
-    return Optional.ofNullable(value).orElse("");
-  }
-
-  private static Timestamp getTimestamp(Date date) {
-    return date == null ? null : Timestamp.newBuilder()
-        .setSeconds(date.getTime() / 1000)
-        .setNanos((int) ((date.getTime() % 1000) * 1000000))
-        .build();
-  }
 }

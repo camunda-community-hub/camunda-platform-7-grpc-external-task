@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
 
 option java_multiple_files = true;
 package org.camunda.bpm.grpc;
@@ -61,13 +62,16 @@ message FetchAndLockResponse {
   string businessKey = 16;
   map<string, string> extensionProperties = 17;
   string processDefinitionId = 18;
-  // map<string, TypedValueField> variables = 19;
+  map<string, TypedValueFieldDto> variables = 19;
+  
 }
 
 // The request message for completing a task
 message CompleteRequest {
   string id = 1;
   string workerId = 2;
+  map<string, TypedValueFieldDto> variables = 3;
+  map<string, TypedValueFieldDto> localVariables = 4;
 }
 
 // The response message for completing a task
@@ -135,3 +139,17 @@ message GetBinaryVariableRequest {
 message GetBinaryVariableResponse {
   bytes data = 1;
 }
+
+// The variable value representation
+message TypedValueFieldDto {
+  string type = 1;
+  google.protobuf.Any value = 2;
+  map<string, google.protobuf.Any> valueInfo = 3;
+}
+
+message ListValue {
+  repeated google.protobuf.Any values = 1;
+}
+message MapValue {
+  map<string, google.protobuf.Any> values = 1;
+} 
