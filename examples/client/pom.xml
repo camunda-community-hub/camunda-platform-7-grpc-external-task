@@ -36,6 +36,17 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>${springBoot.version}</version>
+        <configuration>
+          <layout>ZIP</layout>
+          <mainClass>org.camunda.bpm.grpc.clientexample.ClientExampleApplication</mainClass>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

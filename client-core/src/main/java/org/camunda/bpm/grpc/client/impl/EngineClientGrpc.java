@@ -16,15 +16,16 @@
  */
 package org.camunda.bpm.grpc.client.impl;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Function;
 
 import org.camunda.bpm.client.impl.EngineClient;
 import org.camunda.bpm.client.impl.EngineClientException;
+import org.camunda.bpm.client.variable.impl.TypedValueField;
 import org.camunda.bpm.grpc.CompleteRequest;
-import org.camunda.bpm.grpc.CompleteResponse;
 import org.camunda.bpm.grpc.ExtendLockRequest;
-import org.camunda.bpm.grpc.ExtendLockResponse;
 import org.camunda.bpm.grpc.ExternalTaskGrpc;
 import org.camunda.bpm.grpc.ExternalTaskGrpc.ExternalTaskBlockingStub;
 import org.camunda.bpm.grpc.ExternalTaskGrpc.ExternalTaskStub;
@@ -33,11 +34,10 @@ import org.camunda.bpm.grpc.FetchAndLockResponse;
 import org.camunda.bpm.grpc.GetBinaryVariableRequest;
 import org.camunda.bpm.grpc.GetBinaryVariableResponse;
 import org.camunda.bpm.grpc.HandleBpmnErrorRequest;
-import org.camunda.bpm.grpc.HandleBpmnErrorResponse;
 import org.camunda.bpm.grpc.HandleFailureRequest;
-import org.camunda.bpm.grpc.HandleFailureResponse;
+import org.camunda.bpm.grpc.TypedValueFieldDto;
 import org.camunda.bpm.grpc.UnlockRequest;
-import org.camunda.bpm.grpc.UnlockResponse;
+import org.camunda.bpm.grpc.core.VariableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,25 +74,24 @@ public class EngineClientGrpc extends EngineClient {
         .setId(taskId)
         .build();
 
-    stub.unlock(request, this.<UnlockResponse>createLoggingObserver(
+    stub.unlock(request, createLoggingObserver(
         response -> "Task "+ request.getId() + " unlocked with status " + response.getStatus(),
         "Could not unlock the task " + request.getId() + " (server error)"));
   }
 
   @Override
   public void complete(String taskId, Map<String, Object> variables, Map<String, Object> localVariables) throws EngineClientException {
-    // TODO add localVariables and variables to proto
-//    Map<String, TypedValueField> typedValueDtoMap = typedValues.serializeVariables(variables);
-//    Map<String, TypedValueField> localTypedValueDtoMap = typedValues.serializeVariables(localVariables);
+    Map<String, TypedValueFieldDto> typedValueDtoMap = toTypedValueFields(typedValues.serializeVariables(variables));
+    Map<String, TypedValueFieldDto> localTypedValueDtoMap = toTypedValueFields(typedValues.serializeVariables(localVariables));
 
     CompleteRequest request = CompleteRequest.newBuilder()
         .setWorkerId(workerId)
         .setId(taskId)
-//        .setLocalVariables(localTypedValueDtoMap)
-//        .setVariables(typedValueDtoMap)
+        .putAllLocalVariables(localTypedValueDtoMap)
+        .putAllVariables(typedValueDtoMap)
         .build();
 
-    stub.complete(request, this.<CompleteResponse>createLoggingObserver(
+    stub.complete(request, createLoggingObserver(
         response -> "Task " + request.getId() + " completed with status " + response.getStatus(),
         "Could not complete the task " + request.getId() + " (server error)"));
   }
@@ -107,7 +106,7 @@ public class EngineClientGrpc extends EngineClient {
         .setRetryTimeout(retryTimeout)
         .build();
 
-    stub.handleFailure(request, this.<HandleFailureResponse>createLoggingObserver(
+    stub.handleFailure(request, createLoggingObserver(
         response -> "Failure for Task " + request.getId() + " handled with status " + response.getStatus(),
         "Could not handle the failure for the task " + request.getId() + " (server error)"));
   }
@@ -124,7 +123,7 @@ public class EngineClientGrpc extends EngineClient {
 //        .setVariables(typeValueDtoMap)
         .build();
 
-    stub.handleBpmnError(request, this.<HandleBpmnErrorResponse>createLoggingObserver(
+    stub.handleBpmnError(request, createLoggingObserver(
         response -> "BPMN Error for Task " + request.getId() + " handled with status " + response.getStatus(),
         "Could not handle the BPMN Error for the task " + request.getId() + " (server error)"));
   }
@@ -136,7 +135,7 @@ public class EngineClientGrpc extends EngineClient {
         .setDuration(newDuration)
         .build();
 
-    stub.extendLock(request, this.<ExtendLockResponse>createLoggingObserver(
+    stub.extendLock(request, createLoggingObserver(
         response -> "Lock for Task " + request.getId() + " extended with status " + response.getStatus(),
         "Could not extend the lock for the task " + request.getId() + " (server error)"));
   }
@@ -155,7 +154,7 @@ public class EngineClientGrpc extends EngineClient {
     return localBinaryVariable.getData().toByteArray();
   }
 
-  protected <T> StreamObserver<T> createLoggingObserver(Function<T, String> succesMessageFunction, String errorMessage) {
+  protected static <T> StreamObserver<T> createLoggingObserver(Function<T, String> succesMessageFunction, String errorMessage) {
     return new StreamObserver<T>() {
       @Override
       public void onNext(T response) {
@@ -172,6 +171,18 @@ public class EngineClientGrpc extends EngineClient {
         // nothing to do
       }
     };
+  }
+
+  protected static Map<String, TypedValueFieldDto> toTypedValueFields(Map<String, TypedValueField> variablesMap) {
+    Map<String, TypedValueFieldDto> map = new HashMap<>();
+    for (Entry<String, TypedValueField> entry : variablesMap.entrySet()) {
+      TypedValueFieldDto.Builder field = TypedValueFieldDto.newBuilder();
+      field.setType(entry.getValue().getType());
+      field.setValue(VariableUtils.pack(entry.getValue().getValue()));
+      field.putAllValueInfo(VariableUtils.packMap(entry.getValue().getValueInfo()));
+      map.put(entry.getKey(), field.build());
+    }
+    return map;
   }
 
 }
