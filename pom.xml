@@ -30,7 +30,7 @@
     
     <springBoot.version>2.3.4.RELEASE</springBoot.version>
     <grpc.version>1.31.1</grpc.version>
-    <grpcSpringBootStarter.version>3.5.6</grpcSpringBootStarter.version>
+    <grpcSpringBootStarter.version>4.0.0</grpcSpringBootStarter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <!-- disable javadoc linter for JDK8 to not fail on incomplete javadoc -->
