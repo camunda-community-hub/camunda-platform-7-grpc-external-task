@@ -1,7 +1,6 @@
 package org.camunda.bpm.spring.boot.starter.grpc.externaltask;
 
-import static java.lang.Boolean.TRUE;
-
+import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Date;
@@ -10,8 +9,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.ExternalTaskService;
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.exception.NotFoundException;
 import org.camunda.bpm.engine.externaltask.ExternalTaskQueryBuilder;
 import org.camunda.bpm.engine.externaltask.ExternalTaskQueryTopicBuilder;
 import org.camunda.bpm.engine.externaltask.LockedExternalTask;
@@ -37,13 +38,14 @@ import org.camunda.bpm.grpc.HandleBpmnErrorResponse;
 import org.camunda.bpm.grpc.HandleFailureRequest;
 import org.camunda.bpm.grpc.HandleFailureResponse;
 import org.camunda.bpm.grpc.TypedValueFieldDto;
-import org.camunda.bpm.grpc.core.VariableUtils;
 import org.camunda.bpm.grpc.UnlockRequest;
 import org.camunda.bpm.grpc.UnlockResponse;
+import org.camunda.bpm.grpc.core.VariableUtils;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,9 +73,11 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
 
       @Override
       public void onError(Throwable t) {
-        log.error("uh oh, server received error", t);
-        if (Status.CANCELLED.equals(Status.fromThrowable(t))) {
+        if (Status.CANCELLED.getCode().equals(Status.fromThrowable(t).getCode())) {
+          log.info("Client disconnected, removing pending request");
           informer.removeClientRequests(responseObserver);
+        } else {
+          log.error("Server received error", t);
         }
       }
 
@@ -92,11 +96,17 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
       VariableMap variables = fromTypedValueFields(request.getVariablesMap());
       VariableMap localVariables = fromTypedValueFields(request.getLocalVariablesMap());
       externalTaskService.complete(request.getId(), request.getWorkerId(), variables, localVariables);
-      responseObserver.onNext(CompleteResponse.newBuilder().setStatus("200").build());
+      responseObserver.onNext(CompleteResponse.newBuilder().setStatus(HttpURLConnection.HTTP_NO_CONTENT).build());
       responseObserver.onCompleted();
+    } catch (NotFoundException nfe) {
+      log.debug("Task with id {} not found", request.getId());
+      responseObserver.onError(createStatusRuntimeException(Status.NOT_FOUND, nfe));
+    } catch (BadUserRequestException bure) {
+      log.debug("Task with id {} not locked by worker {}", request.getId(), request.getWorkerId());
+      responseObserver.onError(createStatusRuntimeException(Status.PERMISSION_DENIED, bure));
     } catch (Exception e) {
       log.error("Error on completing task " + request.getId(), e);
-      responseObserver.onError(e);
+      responseObserver.onError(createStatusRuntimeException(Status.INTERNAL, e));
     }
   }
 
@@ -105,8 +115,14 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
     try {
       externalTaskService.handleFailure(request.getId(), request.getWorkerId(), request.getErrorMessage(), request.getErrorDetails(), request.getRetries(),
           request.getRetryTimeout());
-      responseObserver.onNext(HandleFailureResponse.newBuilder().setStatus("200").build());
+      responseObserver.onNext(HandleFailureResponse.newBuilder().setStatus(HttpURLConnection.HTTP_NO_CONTENT).build());
       responseObserver.onCompleted();
+    } catch (NotFoundException nfe) {
+      log.debug("Task with id {} not found", request.getId());
+      responseObserver.onError(createStatusRuntimeException(Status.NOT_FOUND, nfe));
+    } catch (BadUserRequestException bure) {
+      log.debug("Task with id {} not locked by worker {}", request.getId(), request.getWorkerId());
+      responseObserver.onError(createStatusRuntimeException(Status.PERMISSION_DENIED, bure));
     } catch (Exception e) {
       log.error("Error on handling failure for task " + request.getId(), e);
       responseObserver.onError(e);
@@ -117,8 +133,14 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
   public void handleBpmnError(HandleBpmnErrorRequest request, StreamObserver<HandleBpmnErrorResponse> responseObserver) {
     try {
       externalTaskService.handleBpmnError(request.getId(), request.getWorkerId(), request.getErrorCode(), request.getErrorMessage());
-      responseObserver.onNext(HandleBpmnErrorResponse.newBuilder().setStatus("200").build());
+      responseObserver.onNext(HandleBpmnErrorResponse.newBuilder().setStatus(HttpURLConnection.HTTP_NO_CONTENT).build());
       responseObserver.onCompleted();
+    } catch (NotFoundException nfe) {
+      log.debug("Task with id {} not found", request.getId());
+      responseObserver.onError(createStatusRuntimeException(Status.NOT_FOUND, nfe));
+    } catch (BadUserRequestException bure) {
+      log.debug("Task with id {} not locked by worker {}", request.getId(), request.getWorkerId());
+      responseObserver.onError(createStatusRuntimeException(Status.PERMISSION_DENIED, bure));
     } catch (Exception e) {
       log.error("Error on handling BPMN error for task " + request.getId(), e);
       responseObserver.onError(e);
@@ -129,8 +151,11 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
   public void unlock(UnlockRequest request, StreamObserver<UnlockResponse> responseObserver) {
     try {
       externalTaskService.unlock(request.getId());
-      responseObserver.onNext(UnlockResponse.newBuilder().setStatus("200").build());
+      responseObserver.onNext(UnlockResponse.newBuilder().setStatus(HttpURLConnection.HTTP_NO_CONTENT).build());
       responseObserver.onCompleted();
+    } catch (NotFoundException nfe) {
+      log.debug("Task with id {} not found", request.getId());
+      responseObserver.onError(createStatusRuntimeException(Status.NOT_FOUND, nfe));
     } catch (Exception e) {
       log.error("Error on unlocking task " + request.getId(), e);
       responseObserver.onError(e);
@@ -141,16 +166,26 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
   public void extendLock(ExtendLockRequest request, StreamObserver<ExtendLockResponse> responseObserver) {
     try {
       externalTaskService.extendLock(request.getId(), request.getWorkerId(), request.getDuration());
-      responseObserver.onNext(ExtendLockResponse.newBuilder().setStatus("200").build());
+      responseObserver.onNext(ExtendLockResponse.newBuilder().setStatus(HttpURLConnection.HTTP_NO_CONTENT).build());
       responseObserver.onCompleted();
+    } catch (NotFoundException nfe) {
+      log.debug("Task with id {} not found", request.getId());
+      responseObserver.onError(createStatusRuntimeException(Status.NOT_FOUND, nfe));
+    } catch (BadUserRequestException bure) {
+      log.debug("Task with id {} not locked by worker {}", request.getId(), request.getWorkerId());
+      responseObserver.onError(createStatusRuntimeException(Status.PERMISSION_DENIED, bure));
     } catch (Exception e) {
       log.error("Error on extending lock for task " + request.getId(), e);
       responseObserver.onError(e);
     }
   }
 
+  protected static StatusRuntimeException createStatusRuntimeException(Status status, Exception e) {
+    return status.withDescription(e.getMessage()).withCause(e).asRuntimeException();
+  }
+
   protected void informClient(FetchAndLockRequest request, StreamObserver<FetchAndLockResponse> client) {
-    ExternalTaskQueryBuilder fetchBuilder = createQuery(request, externalTaskService);
+    ExternalTaskQueryBuilder fetchBuilder = createQuery(request);
     List<LockedExternalTask> lockedTasks = fetchBuilder.execute();
     if (lockedTasks.isEmpty()) {
       // if no external tasks locked => save the response observer and
@@ -240,7 +275,7 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
     }
   }
 
-  protected static ExternalTaskQueryBuilder createQuery(FetchAndLockRequest request, ExternalTaskService externalTaskService) {
+  protected ExternalTaskQueryBuilder createQuery(FetchAndLockRequest request) {
     ExternalTaskQueryBuilder fetchBuilder = externalTaskService.fetchAndLock(1,
         request.getWorkerId(),
         request.getUsePriority());
@@ -273,11 +308,6 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
             topicFetchBuilder.variables(topicDto.getVariablesList());
           }
 
-          // TODO add "processVariables" to proto
-//          if (topicDto.getProcessVariables() != null) {
-//            topicFetchBuilder.processInstanceVariableEquals(topicDto.getProcessVariables());
-//          }
-
           if (topicDto.getDeserializeValues()) {
             topicFetchBuilder.enableCustomObjectDeserialization();
           }
@@ -286,7 +316,7 @@ public class ExternalTaskServiceGrpc extends ExternalTaskImplBase {
             topicFetchBuilder.localVariables();
           }
 
-          if (TRUE.equals(topicDto.getWithoutTenantId())) {
+          if (topicDto.getWithoutTenantId()) {
             topicFetchBuilder.withoutTenantId();
           }
 

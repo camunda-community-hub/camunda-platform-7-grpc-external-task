@@ -46,7 +46,7 @@ public class ClientExampleApplication {
     return new ExternalTaskClientBuilderImplGrpc()
         .baseUrl("localhost:6565")
         .workerId(WORKER_ID_PREFIX + new Random().nextInt(100))
-        .lockDuration(5000L)
+        .lockDuration(30000L)
         .disableAutoFetching()
         .build();
   }

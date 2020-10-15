@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.bpm.engine.ExternalTaskService;
 import org.camunda.bpm.engine.externaltask.LockedExternalTask;
 import org.camunda.bpm.grpc.FetchAndLockResponse;
 import org.camunda.bpm.grpc.FetchAndLockRequest;
@@ -24,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WaitingClientInformer {
 
   @Autowired
-  ExternalTaskService externalTaskService;
+  ExternalTaskServiceGrpc externalTaskServiceGrpc;
 
   private ExternalTaskCreationListener externalTaskCreationListener;
 
@@ -38,7 +37,7 @@ public class WaitingClientInformer {
     log.info("Found {} pending requests", waitingClients.size());
     for (Iterator<Pair<FetchAndLockRequest, StreamObserver<FetchAndLockResponse>>> iterator = waitingClients.iterator(); iterator.hasNext();) {
       Pair<FetchAndLockRequest, StreamObserver<FetchAndLockResponse>> pair = iterator.next();
-      List<LockedExternalTask> lockedTasks = ExternalTaskServiceGrpc.createQuery(pair.getLeft(), externalTaskService).execute();
+      List<LockedExternalTask> lockedTasks = externalTaskServiceGrpc.createQuery(pair.getLeft()).execute();
       if (!lockedTasks.isEmpty()) {
         LockedExternalTask lockedExternalTask = lockedTasks.get(0);
         log.info("informed client about locked external task {}", lockedExternalTask.getId());

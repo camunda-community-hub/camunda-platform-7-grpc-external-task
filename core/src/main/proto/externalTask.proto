@@ -76,7 +76,7 @@ message CompleteRequest {
 
 // The response message for completing a task
 message CompleteResponse {
-  string status = 1;
+  int32 status = 1;
 }
 
 // The request message for unlocking a task
@@ -86,7 +86,7 @@ message UnlockRequest {
 
 // The response message for unlocking a task
 message UnlockResponse {
-  string status = 1;
+  int32 status = 1;
 }
 
 // The request message for reporting a failure for a task
@@ -101,7 +101,7 @@ message HandleFailureRequest {
 
 // The response message for reporting a failure for a task
 message HandleFailureResponse {
-  string status = 1;
+  int32 status = 1;
 }
 
 // The request message for reporting a BPMN error for a task
@@ -115,7 +115,7 @@ message HandleBpmnErrorRequest {
 
 // The response message for for reporting a BPMN error a task
 message HandleBpmnErrorResponse {
-  string status = 1;
+  int32 status = 1;
 }
 
 // The request message for completing a task
@@ -127,7 +127,7 @@ message ExtendLockRequest {
 
 // The response message for completing a task
 message ExtendLockResponse {
-  string status = 1;
+  int32 status = 1;
 }
 
 // The request message for receiving the binary value of a variable
