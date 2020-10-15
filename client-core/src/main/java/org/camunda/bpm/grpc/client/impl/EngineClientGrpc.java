@@ -113,14 +113,13 @@ public class EngineClientGrpc extends EngineClient {
 
   @Override
   public void bpmnError(String taskId, String errorCode, String errorMessage, Map<String, Object> variables) throws EngineClientException {
-    // TODO add variables to proto
-//    Map<String, TypedValueField> typeValueDtoMap = typedValues.serializeVariables(variables);
+    Map<String, TypedValueFieldDto> typedValueDtoMap = toTypedValueFields(typedValues.serializeVariables(variables));
 
     HandleBpmnErrorRequest request = HandleBpmnErrorRequest.newBuilder()
         .setId(taskId)
         .setErrorCode(errorCode)
         .setErrorMessage(errorMessage)
-//        .setVariables(typeValueDtoMap)
+        .putAllVariables(typedValueDtoMap)
         .build();
 
     stub.handleBpmnError(request, createLoggingObserver(

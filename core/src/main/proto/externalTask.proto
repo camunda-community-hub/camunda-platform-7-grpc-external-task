@@ -110,6 +110,7 @@ message HandleBpmnErrorRequest {
   string workerId = 2;
   string errorCode = 3;
   string errorMessage = 4;
+  map<string, TypedValueFieldDto> variables = 5;
 }
 
 // The response message for for reporting a BPMN error a task
