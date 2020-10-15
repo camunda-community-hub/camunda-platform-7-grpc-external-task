@@ -5,7 +5,7 @@ import java.util.Random;
 
 import org.camunda.bpm.client.ExternalTaskClient;
 import org.camunda.bpm.client.task.ExternalTaskHandler;
-import org.camunda.bpm.grpc.client.impl.ExternalTaskClientBuilderImplGrpc;
+import org.camunda.bpm.grpc.client.ExternalTaskClientGrpc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ public class ClientExampleApplication {
 
   @Bean
   ExternalTaskClient clientGrpc() {
-    return new ExternalTaskClientBuilderImplGrpc()
+    return ExternalTaskClientGrpc.create()
         .baseUrl("localhost:6565")
         .workerId(WORKER_ID_PREFIX + new Random().nextInt(100))
         .lockDuration(30000L)
