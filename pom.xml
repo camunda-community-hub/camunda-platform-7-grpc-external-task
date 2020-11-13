@@ -28,7 +28,7 @@
     <camunda.version>7.14.0</camunda.version>
     <camunda.externalTaskJava.version>1.4.0</camunda.externalTaskJava.version>
     
-    <springBoot.version>2.3.4.RELEASE</springBoot.version>
+    <springBoot.version>2.4.0</springBoot.version>
     <grpc.version>1.32.2</grpc.version>
     <grpcSpringBootStarter.version>4.0.0</grpcSpringBootStarter.version>
 
