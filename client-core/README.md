@@ -4,7 +4,7 @@ This client core consumes a gRPC API for external tasks provided by the [gRPC Sp
 Use it in your project by adding the following dependency to your application
 ```xml
 <dependency>
-  <groupId>org.camunda.bpm.grpc.externaltask</groupId>
+  <groupId>org.camunda.bpm.extension.grpc.externaltask</groupId>
   <artifactId>camunda-bpm-grpc-external-task-client-core</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 </dependency>
