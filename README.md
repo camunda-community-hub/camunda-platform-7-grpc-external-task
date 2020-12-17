@@ -8,3 +8,14 @@ You can use the [Client Base](./client-core) in your application (e. g. a Spring
 
 Have a look at the [examples](./examples) for server and client examples.
 
+## Contribution
+
+Found a bug? Please report it using [Github Issues](../../issues).
+
+Want to extend, improve or fix a bug? [Pull Requests](../../pulls) are very welcome.
+
+Want to discuss something? The [Camunda Forum](https://forum.camunda.org/c/community-extensions) might be the best place for it.
+
+## License
+
+[Apache License, Version 2.0](./LICENSE)
