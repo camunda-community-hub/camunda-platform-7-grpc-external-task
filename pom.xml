@@ -108,23 +108,7 @@
     <developerConnection>scm:git:git@github.com:tmetzke/camunda-bpm-grpc-external-task.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
-
-  <!-- repositories used for distribution of releases and snapshots, DO NOT 
-    CHANGE -->
-  <distributionManagement>
-    <repository>
-      <id>camunda-nexus</id>
-      <name>camunda bpm</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-bpm</url>
-    </repository>
-    <snapshotRepository>
-      <id>camunda-nexus</id>
-      <name>camunda bpm snapshots</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-bpm-snapshots</url>
-      <uniqueVersion>true</uniqueVersion>
-    </snapshotRepository>
-  </distributionManagement>
-
+  
   <repositories>
     <repository>
       <id>camunda.com.public</id>
