@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/tmetzke/camunda-bpm-grpc-external-task.svg?branch=master)](https://travis-ci.org/tmetzke/camunda-bpm-grpc-external-task)
+[![Build Status](https://travis-ci.com/camunda/camunda-bpm-grpc-external-task.svg?branch=master)](https://travis-ci.org/camunda/camunda-bpm-grpc-external-task)
 # gRPC API for Camunda BPM Runtime External Tasks
 This project provides a gRPC API for external tasks based on the Camunda BPM runtime and Spring Boot.
 
