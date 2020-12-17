@@ -10,3 +10,5 @@ Use it in your project by adding the following dependency to your Spring Boot ap
 </dependency>
 ```
 
+The starter will configure a server to offer the API on port 6565 by default.
+It is based on https://github.com/LogNet/grpc-spring-boot-starter. Please have a look at the configuration options over there to adjust your server accordingly.
