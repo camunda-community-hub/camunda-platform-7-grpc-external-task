@@ -24,7 +24,7 @@
   </modules>
 
   <properties>
-    <java.version>1.8</java.version>
+    <version.java>1.8</version.java>
     
     <camunda.version>7.14.0</camunda.version>
     <camunda.externalTaskJava.version>1.4.0</camunda.externalTaskJava.version>
@@ -85,20 +85,6 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-  
-  <build>
-    <defaultGoal>clean install</defaultGoal>
-
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   
   <profiles>
     <profile>
