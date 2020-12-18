@@ -6,7 +6,7 @@ Use it in your project by adding the following dependency to your application
 <dependency>
   <groupId>org.camunda.bpm.extension.grpc.externaltask</groupId>
   <artifactId>camunda-bpm-grpc-external-task-client-core</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>0.1.0</version>
 </dependency>
 ```
 
