@@ -13,8 +13,8 @@
 
   <artifactId>camunda-bpm-grpc-external-task-client-example</artifactId>
 
-  <name>Camunda BPM External Task gRPC Client Example</name>
-  <description>Camunda BPM providing gRPC External Task Client with Spring Boot</description>
+  <name>Camunda Platform External Task gRPC Client Example</name>
+  <description>Camunda Platform providing gRPC External Task Client with Spring Boot</description>
 
   <dependencies>
     <dependency>

@@ -1,5 +1,5 @@
 # Spring Boot Starter providing a gRPC API for external tasks
-This starter provides a gRPC API for external tasks based on the Camunda BPM runtime.
+This starter provides a gRPC API for external tasks based on the Camunda Platform runtime.
 
 Use it in your project by adding the following dependency to your Spring Boot application
 ```xml
