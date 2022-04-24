@@ -4,6 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 [![Starter](https://img.shields.io/maven-central/v/org.camunda.bpm.extension.grpc.externaltask/camunda-bpm-grpc-external-task-spring-boot-starter?color=green&label=starter)](https://search.maven.org/artifact/org.camunda.bpm.extension.grpc.externaltask/camunda-bpm-grpc-external-task-spring-boot-starter)
 [![Client](https://img.shields.io/maven-central/v/org.camunda.bpm.extension.grpc.externaltask/camunda-bpm-grpc-external-task-client-core?color=green&label=client)](https://search.maven.org/artifact/org.camunda.bpm.extension.grpc.externaltask/camunda-bpm-grpc-external-task-client-core)
+![Compatible with: Camunda Platform 7](https://img.shields.io/badge/Compatible%20with-Camunda%20Platform%207-26d07c)
 
 This project provides a gRPC API for external tasks based on the Camunda Platform runtime and Spring Boot.
 
