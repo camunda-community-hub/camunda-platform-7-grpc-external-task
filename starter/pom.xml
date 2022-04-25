@@ -41,28 +41,4 @@
 
   </dependencies>
 
-  <!-- repositories used for distribution of releases and snapshots, DO NOT 
-    CHANGE -->
-  <distributionManagement>
-    <repository>
-      <id>camunda-nexus</id>
-      <name>Camunda Platform</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
-    </repository>
-    <snapshotRepository>
-      <id>camunda-nexus</id>
-      <name>Camunda Platform snapshots</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
-      <uniqueVersion>true</uniqueVersion>
-    </snapshotRepository>
-  </distributionManagement>
-
-  <repositories>
-    <repository>
-      <id>camunda.com.public</id>
-      <name>Camunda Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/public/</url>
-    </repository>
-  </repositories>
-
 </project>
