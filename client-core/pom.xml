@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.community</groupId>
     <artifactId>camunda-platform-7-grpc-external-task-root</artifactId>
-    <version>0.2.1-SNAPSHOT</version>
+    <version>0.2.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
