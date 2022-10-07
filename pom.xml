@@ -23,7 +23,7 @@
   <properties>
     <version.java>1.8</version.java>
     
-    <camunda.version>7.14.0</camunda.version>
+    <camunda.version>7.18.0</camunda.version>
     <camunda.externalTaskJava.version>1.4.0</camunda.externalTaskJava.version>
     
     <springBoot.version>2.4.1</springBoot.version>
